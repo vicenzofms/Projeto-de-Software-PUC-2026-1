@@ -1,0 +1,92 @@
+@startuml
+
+skinparam nodeStyle rectangle
+
+' =============================================
+' DISPOSITIVOS DOS USUÁRIOS
+' =============================================
+cloud "Internet" {
+    node "Dispositivo do Atleta" {
+        [Navegador Web - Atleta] <<browser>>
+    }
+    node "Dispositivo do Organizador" {
+        [Navegador Web - Organizador] <<browser>>
+    }
+}
+
+' =============================================
+' CAMADA DE ENTRADA
+' =============================================
+node "Servidor de Borda" {
+    [Firewall]             <<component>>
+    [Balanceador de Carga] <<component>>
+    [Firewall] -down-> [Balanceador de Carga] : filtra tráfego
+}
+
+' =============================================
+' SERVIDORES DE APLICAÇÃO
+' =============================================
+node "Servidor de Aplicação 1 (Primário)" as App1 {
+    [UI Web - Atleta]       <<component>>
+    [UI Web - Organizador]  <<component>>
+    [Módulo de Inscrições]  <<component>>
+    [Módulo de Competições] <<component>>
+    [Módulo de Alocação]    <<component>>
+    [Módulo de Resultados]  <<component>>
+    [Módulo de Relatórios]  <<component>>
+    [RepositorioSGO]        <<component>>
+}
+
+node "Servidor de Aplicação 2 (Réplica)" as App2 {
+    [UI Web - Atleta R]       <<component>>
+    [UI Web - Organizador R]  <<component>>
+    [Módulo de Inscrições R]  <<component>>
+    [Módulo de Competições R] <<component>>
+    [Módulo de Alocação R]    <<component>>
+    [Módulo de Resultados R]  <<component>>
+    [Módulo de Relatórios R]  <<component>>
+    [RepositorioSGO R]        <<component>>
+}
+
+' =============================================
+' CAMADA DE DADOS
+' =============================================
+node "Servidor de Cache" {
+    [Cache Redis] <<cache>>
+}
+
+node "Servidor de Banco de Dados Primário" {
+    [BancoDeDados SGO] <<database>>
+}
+
+node "Servidor de Banco de Dados Secundário" {
+    [BancoDeDados SGO Réplica] <<database>>
+}
+
+' =============================================
+' RELAÇÕES
+' =============================================
+
+' Usuários → Borda
+[Navegador Web - Atleta]      -down-> [Firewall] : HTTPS
+[Navegador Web - Organizador] -down-> [Firewall] : HTTPS
+
+' Borda → Servidores de Aplicação
+[Balanceador de Carga] -down-> App1 : distribui requisições
+[Balanceador de Carga] -down-> App2 : distribui requisições
+
+' Sincronismo entre servidores de aplicação (nível de nó)
+App1 -right-> App2 : sincronização de estado
+
+' Repositório → Cache
+[RepositorioSGO]   -down-> [Cache Redis]     : leitura/escrita de sessão
+[RepositorioSGO R] -down-> [Cache Redis]     : leitura/escrita de sessão
+
+' Repositório → Banco de Dados
+[RepositorioSGO]   -down-> [BancoDeDados SGO] : consultas SQL
+[RepositorioSGO R] -down-> [BancoDeDados SGO] : consultas SQL
+
+' Replicação do Banco
+[BancoDeDados SGO] -right-> [BancoDeDados SGO Réplica] : replicação assíncrona
+
+@enduml
