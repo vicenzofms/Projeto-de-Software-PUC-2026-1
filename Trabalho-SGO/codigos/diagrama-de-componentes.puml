@@ -1,0 +1,113 @@
+@startuml
+
+skinparam componentStyle rectangle
+
+' =============================================
+' CAMADA DE APRESENTAÇÃO
+' =============================================
+package "Interface de Usuário" {
+    [UI Web - Atleta]      <<component>>
+    [UI Web - Organizador] <<component>>
+}
+
+' =============================================
+' CAMADA DE APLICAÇÃO
+' =============================================
+package "Módulo de Inscrições" {
+    [ControladorInscricao]  <<component>>
+    [ServicoInscricao]      <<component>>
+
+    interface "IInscricao" as IInsc
+    [ControladorInscricao] o-- IInsc : fornece
+    [ServicoInscricao] --> [ControladorInscricao] : aplica regras de negócio
+
+    interface "ICompeticao" as IComp
+    [ControladorInscricao] ..> IComp : requer
+}
+
+package "Módulo de Competições" {
+    [ControladorCompeticao] <<component>>
+    [ServicoCompeticao]     <<component>>
+
+    interface "ICompeticao" as IComp2
+    [ControladorCompeticao] o-- IComp2 : fornece
+    [ServicoCompeticao] --> [ControladorCompeticao] : aplica regras de negócio
+
+    interface "IAlocacao" as IAloc
+    [ControladorCompeticao] ..> IAloc : requer
+}
+
+package "Módulo de Alocação" {
+    [ControladorAlocacao]   <<component>>
+    [ServicoAlocacao]       <<component>>
+
+    interface "IAlocacao" as IAloc2
+    [ControladorAlocacao] o-- IAloc2 : fornece
+    [ServicoAlocacao] --> [ControladorAlocacao] : verifica conflitos de horário
+
+    interface "IPersistencia" as IPers1
+    [ControladorAlocacao] ..> IPers1 : requer
+}
+
+package "Módulo de Resultados" {
+    [ControladorResultado]  <<component>>
+    [ServicoResultado]      <<component>>
+
+    interface "IResultado" as IRes
+    [ControladorResultado] o-- IRes : fornece
+    [ServicoResultado] --> [ControladorResultado] : registra classificações
+
+    interface "IPersistencia" as IPers2
+    [ControladorResultado] ..> IPers2 : requer
+}
+
+package "Módulo de Relatórios" {
+    [ControladorRelatorio]  <<component>>
+    [ServicoRelatorio]      <<component>>
+
+    interface "IRelatorio" as IRel
+    [ControladorRelatorio] o-- IRel : fornece
+    [ServicoRelatorio] --> [ControladorRelatorio] : gera relatório de medalhas
+
+    interface "IPersistencia" as IPers3
+    [ControladorRelatorio] ..> IPers3 : requer
+}
+
+' =============================================
+' CAMADA DE PERSISTÊNCIA
+' =============================================
+package "Camada de Dados" {
+    [RepositorioSGO] <<component>>
+    [BancoDeDados]   <<database>>
+
+    interface "IPersistencia" as IPers4
+    [RepositorioSGO] o-- IPers4 : fornece
+    [RepositorioSGO] --> [BancoDeDados] : consultar/persistir dados
+}
+
+' =============================================
+' LIGAÇÕES ENTRE INTERFACES (bindings)
+' =============================================
+IComp  -- IComp2
+IAloc  -- IAloc2
+IPers1 -- IPers4
+IPers2 -- IPers4
+IPers3 -- IPers4
+
+' =============================================
+' LIGAÇÕES UI → MÓDULOS
+' =============================================
+[UI Web - Atleta]      --> [ControladorInscricao]  : inscrever/consultar
+[UI Web - Atleta]      --> [ControladorResultado]  : consultar resultados
+[UI Web - Organizador] --> [ControladorCompeticao] : cadastrar competição
+[UI Web - Organizador] --> [ControladorAlocacao]   : alocar local
+[UI Web - Organizador] --> [ControladorResultado]  : registrar resultado
+[UI Web - Organizador] --> [ControladorRelatorio]  : gerar relatório
+
+' =============================================
+' LIGAÇÕES ENTRE MÓDULOS DE APLICAÇÃO
+' =============================================
+[ControladorInscricao]  --> [ControladorCompeticao] : valida competição
+[ControladorResultado]  --> [ControladorRelatorio]  : atualiza contagem de medalhas
+
+@enduml
