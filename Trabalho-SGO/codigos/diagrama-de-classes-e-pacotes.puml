@@ -1,0 +1,143 @@
+@startuml
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+' =============================================
+' PACOTE: Usuários
+' =============================================
+package "model.usuarios" {
+
+    abstract class Pessoa {
+        +id: int
+        +nome: string
+        +email: string
+        +telefone: string
+        +getInformacoes(): string
+    }
+
+    class Atleta {
+        +dataNascimento: Date
+        +inscreverEmCompeticao(c: Competicao): void
+        +consultarResultados(): List<Resultado>
+    }
+
+    class Organizador {
+        +nivelAcesso: int
+        +cadastrarCompeticao(c: Competicao): void
+        +alocarLocal(l: Local, c: Competicao): void
+        +registrarResultado(r: Resultado): void
+    }
+
+    Pessoa <|-- Atleta
+    Pessoa <|-- Organizador
+}
+
+' =============================================
+' PACOTE: Países
+' =============================================
+package "model.paises" {
+
+    class Pais {
+        +id: int
+        +nome: string
+        +sigla: string
+        +getMedalhas(): MedalhaContagem
+    }
+
+    class MedalhaContagem {
+        +ouro: int
+        +prata: int
+        +bronze: int
+        +getTotal(): int
+    }
+
+    Pais "1" --> "1" MedalhaContagem : possui
+}
+
+' =============================================
+' PACOTE: Competições
+' =============================================
+package "model.competicoes" {
+
+    class Competicao {
+        +id: int
+        +modalidade: string
+        +data: Date
+        +horario: Time
+        +status: string
+        +cadastrar(): void
+        +listarAtletas(): List<Atleta>
+        +verificarConflito(): bool
+    }
+
+    class Local {
+        +id: int
+        +nome: string
+        +capacidade: int
+        +endereco: string
+        +verificarDisponibilidade(data: Date, horario: Time): bool
+    }
+
+    Competicao "1" --> "1" Local : realizada em
+}
+
+' =============================================
+' PACOTE: Inscrições
+' =============================================
+package "model.inscricoes" {
+
+    class Inscricao {
+        +id: int
+        +dataInscricao: Date
+        +paisRepresentado: string
+        +confirmar(): void
+        +cancelar(): void
+    }
+
+    Atleta "1..*" --> "0..*" Inscricao : realiza
+    Competicao "1" --> "0..*" Inscricao : recebe
+    Inscricao "0..*" --> "1" Pais : representa
+}
+
+' =============================================
+' PACOTE: Resultados
+' =============================================
+package "model.resultados" {
+
+    class Resultado {
+        +id: int
+        +dataRegistro: Date
+        +registrar(): void
+        +getClassificacao(): string
+    }
+
+    class Classificacao {
+        +posicao: int
+        +tipoMedalha: string
+    }
+
+    Resultado "1" --> "3" Classificacao : contém
+    Classificacao "1" --> "1" Atleta : atribuída a
+    Resultado "1" --> "1" Competicao : refere-se a
+    Classificacao "0..*" --> "1" Pais : contabilizada em
+}
+
+' =============================================
+' PACOTE: Relatórios
+' =============================================
+package "service.relatorios" {
+
+    class RelatorioMedalhas {
+        +dataGeracao: Date
+        +gerarRelatorio(): void
+        +listarPaisesPorMedalhas(): List<Pais>
+        +exportar(formato: string): File
+    }
+
+    RelatorioMedalhas ..> Pais : consulta
+    RelatorioMedalhas ..> MedalhaContagem : agrega
+    RelatorioMedalhas ..> Resultado : baseia-se em
+}
+
+@enduml
