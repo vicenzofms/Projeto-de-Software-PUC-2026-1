@@ -67,10 +67,9 @@ Este projeto entrega exclusivamente **artefatos de modelagem**:
 - ✅ **1 diagrama de implantação** baseado em Docker.
 - ✅ **1 diagrama de classes** com 13 classes + 5 enums, hierarquia abstrata e composição forte.
 - ✅ **3 diagramas de sequência detalhados** caixa-branca (Controllers → Services → Repositories → Prisma).
-- ✅ **1 diagrama de comunicação** (UC-09) com numeração hierárquica Larman.
+- ⚠️ **1 diagrama de comunicação** TODO.
 - ✅ **1 diagrama de estados** da Ordem de Serviço (12 estados, super-estado, auto-loops).
 - ✅ **Esquema relacional PostgreSQL** com 11 tabelas, índices e restrições.
-- ✅ **1 diagrama Entidade-Relacionamento** em notação crow's foot.
 - ✅ **Estratégia ORM** (Prisma + Table Per Hierarchy + soft-delete + auditoria temporal).
 
 ---
@@ -142,7 +141,7 @@ Estilo arquitetural ***Layered* clássico**, com 4 camadas e dependência unidir
 └─────────────────────────────────────────┘
 ```
 
-A escolha pelo *Layered* clássico (em detrimento de variantes como Hexagonal/Ports & Adapters) reflete o porte do projeto e prioriza **clareza didática** sem prejuízo à organização do código.
+A escolha pelo *Layered* clássico reflete o porte do projeto e prioriza **clareza didática** sem prejuízo à organização do código.
 
 ---
 
@@ -159,7 +158,7 @@ Todos os diagramas estão em **`docs/diagramas-puml/`** (fontes PlantUML) e em *
 | 05 | Implantação | [`05-implantacao.puml`](docs/diagramas-puml/05-implantacao.puml) | [PNG](docs/diagramas-img/05-implantacao.png) |
 | 06 | Classes | [`06-classes.puml`](docs/diagramas-puml/06-classes.puml) | [PNG](docs/diagramas-img/06-classes.png) |
 | 07 | Sequência Detalhada (3 UCs) | [`07-sequencia-de-projeto/`](docs/diagramas-puml/07-sequencia-de-projeto/) | [pasta](docs/diagramas-img/07-sequencia-de-projeto/) |
-| 08 | Comunicação (UC-09) | [`08-comunicacao.puml`](docs/diagramas-puml/08-comunicacao.puml) | [PNG](docs/diagramas-img/08-comunicacao.png) |
+| 08 | Comunicação | [`08-comunicacao.puml`](docs/diagramas-puml/08-comunicacao.puml) | [PNG](docs/diagramas-img/08-comunicacao.png) |
 | 09 | Estados (Ordem de Serviço) | [`09-estados-ordem-servico.puml`](docs/diagramas-puml/09-estados-ordem-servico.puml) | [PNG](docs/diagramas-img/09-estados-ordem-servico.png) |
 | 10 | Modelo Entidade-Relacionamento | [`10-modelo-dados.puml`](docs/diagramas-puml/10-modelo-dados.puml) | [PNG](docs/diagramas-img/10-modelo-dados.png) |
 
@@ -193,13 +192,12 @@ São **11 tabelas no PostgreSQL**, derivadas diretamente do diagrama de classes:
 ├── ⚖️ LICENSE                                  # Licença do projeto
 └── 📁 docs/
     ├── 📁 diagramas-puml/                      # 🛠 Fontes PlantUML
-    │   ├── templates.md                        # Templates de referência (estilo do professor)
     │   ├── 01-casos-de-uso.puml
     │   ├── 03-arquitetura.puml                 # 2 blocos: visao-subsistemas + visao-camadas
     │   ├── 04-componentes.puml
     │   ├── 05-implantacao.puml
     │   ├── 06-classes.puml
-    │   ├── 08-comunicacao.puml
+    │   ├── 08-comunicacao.puml                # todo
     │   ├── 09-estados-ordem-servico.puml
     │   ├── 10-modelo-dados.puml
     │   ├── 📁 02-sequencia-de-sistema/         # DSS - 1 arquivo por UC
@@ -216,7 +214,7 @@ São **11 tabelas no PostgreSQL**, derivadas diretamente do diagrama de classes:
         ├── 04-componentes.png
         ├── 05-implantacao.png
         ├── 06-classes.png
-        ├── 08-comunicacao.png
+        ├── 08-comunicacao.png                  # todo
         ├── 09-estados-ordem-servico.png
         ├── 10-modelo-dados.png
         ├── 📁 02-sequencia-de-sistema/         # 3 PNGs
@@ -262,7 +260,7 @@ Plugins disponíveis para **VS Code** ([PlantUML extension](https://marketplace.
 
 | 👤 Nome | :octocat: GitHub | 📤 Contato |
 |---|---|---|
-| **Vicenzo Fonseca** | [@vicenzofms](https://github.com/vicenzofms) | lucfmello@gmail.com |
+| **Vicenzo Fonseca** | [@vicenzofms](https://github.com/vicenzofms) | vicenzofms@gmail.com |
 
 ---
 
@@ -275,4 +273,4 @@ Plugins disponíveis para **VS Code** ([PlantUML extension](https://marketplace.
 
 ## 📄 Licença
 
-Este projeto é distribuído sob a **[Licença MIT](LICENSE)**.
+Este projeto é distribuído sob a **[Licença MIT](https://github.com/joaopauloaramuni/laboratorio-de-desenvolvimento-de-software/blob/main/LICENSE)**.
