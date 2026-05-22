@@ -1,0 +1,94 @@
+@startuml
+top to bottom direction
+
+component "Web App\n(Angular 21)" as Web <<component>>
+
+package "API (Next.js)" {
+  [AuthModule] <<component>>
+  interface "IAutenticacao" as IAuth
+  [AuthModule] o-- IAuth : fornece
+
+  package "Modulos de Dominio" {
+    [UsuariosModule] <<component>>
+
+    [ClientesModule] <<component>>
+    interface "IClientes" as ICli
+    [ClientesModule] o-- ICli : fornece
+
+    [CatalogoModule] <<component>>
+    interface "ICatalogo" as ICat
+    [CatalogoModule] o-- ICat : fornece
+
+    [OrdemServicoModule] <<component>>
+    interface "IOrdemServico" as IOS
+    [OrdemServicoModule] o-- IOS : fornece
+
+    [OrcamentoModule] <<component>>
+    interface "IOrcamento" as IOrc
+    [OrcamentoModule] o-- IOrc : fornece
+
+    [PagamentoModule] <<component>>
+    interface "IPagamento" as IPag
+    [PagamentoModule] o-- IPag : fornece
+
+    [NotificacaoModule] <<component>>
+    interface "INotificacao" as INot
+    [NotificacaoModule] o-- INot : fornece
+
+    [RelatoriosModule] <<component>>
+  }
+
+  [Prisma ORM] <<component>>
+  interface "IPersistencia" as IPers
+  [Prisma ORM] o-- IPers : fornece
+}
+
+database "PostgreSQL" as DB
+
+cloud "Sistema de Pagamento" as SP
+cloud "Servico SMTP" as SMTP
+
+Web ..> ICli : requer (REST)
+Web ..> ICat : requer (REST)
+Web ..> IOS : requer (REST)
+Web ..> IOrc : requer (REST)
+Web ..> IPag : requer (REST)
+
+[OrdemServicoModule] ..> ICli : requer
+[OrdemServicoModule] ..> ICat : requer
+[OrdemServicoModule] ..> INot : requer
+
+[OrcamentoModule] ..> IOS : requer
+[OrcamentoModule] ..> ICat : requer
+
+[PagamentoModule] ..> IOS : requer
+[PagamentoModule] ..> INot : requer
+[PagamentoModule] ..> SP : HTTPS REST
+
+[RelatoriosModule] ..> ICli : requer
+[RelatoriosModule] ..> ICat : requer
+[RelatoriosModule] ..> IOS : requer
+[RelatoriosModule] ..> IOrc : requer
+[RelatoriosModule] ..> IPag : requer
+
+[NotificacaoModule] ..> SMTP : SMTP assincrono
+
+[Prisma ORM] --> DB : TCP/IP\n(protocolo PostgreSQL, porta 5432)
+
+note bottom of [AuthModule]
+  Aspectos transversais (omitidos
+  para nao poluir o diagrama):
+
+  - **IAutenticacao**: consumida por TODOS
+    os modulos da API. O AuthModule atua
+    como middleware, validando o JWT
+    antes do roteamento ao modulo de
+    destino. A Web App tambem consome
+    IAutenticacao no fluxo de login.
+
+  - **IPersistencia**: consumida por TODOS
+    os modulos de dominio e pelo proprio
+    AuthModule, que delegam a leitura e
+    escrita no PostgreSQL ao Prisma ORM.
+end note
+@enduml

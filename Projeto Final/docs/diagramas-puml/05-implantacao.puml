@@ -1,0 +1,26 @@
+@startuml
+node "Navegador (Funcionario / Gerente)" as Navegador {
+  artifact "Web App\n(Angular 21)" as WebApp
+}
+
+node "Servidor (Docker Host)" as Servidor {
+  node "Container: web-app" as ContWeb {
+    artifact "Build estatico Angular\n(Nginx)" as WebStatic
+  }
+  node "Container: api" as ContApi {
+    artifact "API Next.js" as API
+  }
+  node "Container: postgres" as ContDB {
+    database "PostgreSQL" as DB
+  }
+}
+
+cloud "Sistema de Pagamento" as SP
+cloud "Servico SMTP" as SMTP
+
+Navegador --> ContWeb : HTTPS\n(carrega bundle)
+Navegador --> ContApi : REST + JWT\n(HTTPS)
+ContApi --> ContDB : SQL\n(rede interna Docker)
+ContApi --> SP : HTTPS REST
+ContApi --> SMTP : SMTP\n(notificacoes assincronas)
+@enduml

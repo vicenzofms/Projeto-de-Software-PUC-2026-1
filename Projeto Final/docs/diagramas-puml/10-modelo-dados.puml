@@ -1,0 +1,135 @@
+@startuml
+entity usuario {
+    + id: SERIAL
+    nome: VARCHAR(120)
+    email: VARCHAR(160) <<unique>>
+    senha: VARCHAR(255)
+    tipo: TipoUsuario
+    matricula: VARCHAR(40)
+    ativo: BOOLEAN
+    data_cadastro: TIMESTAMP
+}
+
+entity cliente {
+    + id: SERIAL
+    nome: VARCHAR(120)
+    cpf: VARCHAR(14) <<unique>>
+    telefone: VARCHAR(20)
+    email: VARCHAR(160)
+    endereco: VARCHAR(255)
+    data_cadastro: TIMESTAMP
+}
+
+entity equipamento {
+    + id: SERIAL
+    # cliente_id: INT
+    tipo: VARCHAR(60)
+    marca: VARCHAR(60)
+    modelo: VARCHAR(60)
+    numero_serie: VARCHAR(80)
+    observacoes: TEXT
+}
+
+entity ordem_servico {
+    + id: SERIAL
+    codigo: VARCHAR(20) <<unique>>
+    # cliente_id: INT
+    # equipamento_id: INT
+    # funcionario_responsavel_id: INT
+    problema_relatado: TEXT
+    status: StatusOrdemServico
+    data_abertura: TIMESTAMP
+    data_finalizacao: TIMESTAMP
+}
+
+entity diagnostico {
+    + id: SERIAL
+    # ordem_servico_id: INT <<unique>>
+    analise_tecnica: TEXT
+    causa_identificada: TEXT
+    data_registro: TIMESTAMP
+}
+
+entity orcamento {
+    + id: SERIAL
+    # ordem_servico_id: INT <<unique>>
+    valor_total: DECIMAL(10,2)
+    status: StatusOrcamento
+    data_geracao: TIMESTAMP
+}
+
+entity item_orcamento {
+    + id: SERIAL
+    # orcamento_id: INT
+    tipo: TipoItem
+    # servico_id: INT
+    # peca_id: INT
+    quantidade: INT
+    preco_unitario: DECIMAL(10,2)
+    subtotal: DECIMAL(10,2)
+}
+
+entity servico {
+    + id: SERIAL
+    nome: VARCHAR(120)
+    descricao: TEXT
+    preco_padrao: DECIMAL(10,2)
+    ativo: BOOLEAN
+}
+
+entity peca {
+    + id: SERIAL
+    nome: VARCHAR(120)
+    codigo: VARCHAR(40) <<unique>>
+    preco_unitario: DECIMAL(10,2)
+    saldo_estoque: INT
+    ativo: BOOLEAN
+}
+
+entity pagamento {
+    + id: SERIAL
+    # ordem_servico_id: INT
+    metodo: MetodoPagamento
+    valor: DECIMAL(10,2)
+    status: StatusPagamento
+    data_registro: TIMESTAMP
+    id_transacao: VARCHAR(120)
+}
+
+entity historico_status {
+    + id: SERIAL
+    # ordem_servico_id: INT
+    # funcionario_id: INT
+    status_anterior: StatusOrdemServico
+    status_novo: StatusOrdemServico
+    data_alteracao: TIMESTAMP
+    observacao: TEXT
+}
+
+cliente ||--o{ equipamento : "possui"
+cliente ||--o{ ordem_servico : "abre"
+equipamento ||--o{ ordem_servico : "e objeto de"
+usuario ||--o{ ordem_servico : "responsavel"
+usuario ||--o{ historico_status : "registra"
+
+ordem_servico ||--o| diagnostico : "tem"
+ordem_servico ||--o| orcamento : "tem"
+ordem_servico ||--o{ pagamento : "recebe"
+ordem_servico ||--o{ historico_status : "trilha"
+
+orcamento ||--|{ item_orcamento : "contem"
+servico ||--o{ item_orcamento : "referencia"
+peca ||--o{ item_orcamento : "referencia"
+
+note bottom of usuario
+  Heranca por tabela unica (TPH):
+  o campo tipo discrimina
+  FUNCIONARIO ou GERENTE.
+end note
+
+note right of item_orcamento
+  Tipo XOR: servico_id e peca_id
+  sao mutuamente exclusivos
+  (CHECK constraint).
+end note
+@enduml

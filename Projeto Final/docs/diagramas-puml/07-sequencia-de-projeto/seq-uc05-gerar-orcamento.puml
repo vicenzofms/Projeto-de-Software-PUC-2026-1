@@ -1,0 +1,94 @@
+@startuml seq-uc05-gerar-orcamento
+actor Funcionario
+participant "OrcamentoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "OrcamentoService" as Service
+participant "OrdemServicoRepository" as OSRepo
+participant "PecaRepository" as PecaRepo
+participant "ItemOrcamentoRepository" as ItemRepo
+participant "OrcamentoRepository" as OrcRepo
+participant "OrdemServicoService" as OSService
+participant "HistoricoStatusRepository" as HistRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /orcamentos/:ordemServicoId/itens\n(tipo, itemId, quantidade, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: adicionarItem(ordemServicoId, tipo, itemId, quantidade)
+activate Service
+
+Service -> OSRepo: findByIdComDiagnostico(ordemServicoId)
+activate OSRepo
+OSRepo -> DB: SELECT ordem_servico JOIN diagnostico
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+alt tipo = Peca
+    Service -> PecaRepo: findById(itemId)
+    activate PecaRepo
+    PecaRepo -> DB: SELECT peca WHERE id=?
+    PecaRepo --> Service: peca
+    deactivate PecaRepo
+
+    Service -> Service: peca.verificarDisponibilidade(quantidade)
+    note right of Service: Regra de negocio:\nbloqueia uso sem estoque.
+
+    opt sem estoque
+        Service --> Controller: erro(PecaIndisponivel)
+        Controller --> Funcionario: 409 Conflict
+    end
+end
+
+Service -> ItemRepo: create(orcamentoId, tipo, itemId, quantidade, precoUnitario)
+activate ItemRepo
+ItemRepo -> DB: INSERT INTO item_orcamento
+ItemRepo --> Service: itemOrcamento
+deactivate ItemRepo
+
+Service -> OrcRepo: atualizarValorTotal(orcamentoId)
+activate OrcRepo
+OrcRepo -> DB: UPDATE orcamento SET valor_total = SUM(itens.subtotal)
+OrcRepo --> Service: orcamento
+deactivate OrcRepo
+
+Service --> Controller: itemOrcamentoDTO
+deactivate Service
+
+Controller --> Funcionario: 201 Created\nitemOrcamentoDTO
+deactivate Controller
+
+== Confirmacao do orcamento ==
+
+Funcionario -> Controller: POST /orcamentos/:ordemServicoId/confirmar (JWT)
+activate Controller
+
+Controller -> Service: confirmar(ordemServicoId)
+activate Service
+
+Service -> OrcRepo: update(orcamentoId, status=AguardandoAprovacao)
+activate OrcRepo
+OrcRepo -> DB: UPDATE orcamento
+OrcRepo --> Service: orcamento
+deactivate OrcRepo
+
+Service -> OSService: alterarStatus(ordemServicoId, AguardandoAprovacao)
+activate OSService
+OSService -> HistRepo: create(ordemServicoId, OrcamentoAprovado, AguardandoAprovacao, funcionarioId)
+activate HistRepo
+HistRepo -> DB: INSERT INTO historico_status
+HistRepo --> OSService: ok
+deactivate HistRepo
+OSService --> Service: ok
+deactivate OSService
+
+Service --> Controller: orcamentoDTO
+deactivate Service
+
+Controller --> Funcionario: 200 OK\norcamentoDTO
+deactivate Controller
+@enduml

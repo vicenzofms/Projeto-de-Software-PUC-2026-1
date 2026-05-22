@@ -1,0 +1,60 @@
+@startuml seq-uc03-abrir-ordem-servico
+actor Funcionario
+participant "OrdemServicoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "OrdemServicoService" as Service
+participant "ClientesRepository" as CliRepo
+participant "EquipamentosRepository" as EqpRepo
+participant "OrdemServicoRepository" as OSRepo
+participant "HistoricoStatusRepository" as HistRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /ordens-servico\n(clienteId, equipamentoId, problemaRelatado, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: abrir(clienteId, equipamentoId, problemaRelatado, funcionarioId)
+activate Service
+
+Service -> CliRepo: findById(clienteId)
+activate CliRepo
+CliRepo -> DB: SELECT cliente WHERE id=?
+CliRepo --> Service: cliente
+deactivate CliRepo
+
+Service -> EqpRepo: findById(equipamentoId)
+activate EqpRepo
+EqpRepo -> DB: SELECT equipamento WHERE id=?
+EqpRepo --> Service: equipamento
+deactivate EqpRepo
+
+Service -> OSRepo: existeAtiva(equipamentoId)
+activate OSRepo
+OSRepo -> DB: SELECT COUNT(*) FROM ordem_servico WHERE equipamento_id=? AND status!='Finalizada'
+OSRepo --> Service: false
+deactivate OSRepo
+
+note right of Service: Regras validadas:\ncliente cadastrado,\nequipamento cadastrado,\nsem Ordem de Servico ativa.
+
+Service -> OSRepo: create(clienteId, equipamentoId, problemaRelatado, status=Aberta)
+activate OSRepo
+OSRepo -> DB: INSERT INTO ordem_servico
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+Service -> HistRepo: create(ordemServicoId, statusAnterior=null, statusNovo=Aberta, funcionarioId)
+activate HistRepo
+HistRepo -> DB: INSERT INTO historico_status
+HistRepo --> Service: ok
+deactivate HistRepo
+
+Service --> Controller: ordemServicoDTO
+deactivate Service
+
+Controller --> Funcionario: 201 Created\nordemServicoDTO
+deactivate Controller
+@enduml

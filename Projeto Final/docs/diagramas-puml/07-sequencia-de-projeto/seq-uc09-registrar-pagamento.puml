@@ -1,0 +1,79 @@
+@startuml seq-uc09-registrar-pagamento
+actor Funcionario
+actor Cliente
+participant "PagamentoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "PagamentoService" as Service
+participant "OrdemServicoRepository" as OSRepo
+participant "SistemaPagamentoClient" as SPClient
+participant "PagamentoRepository" as PagRepo
+participant "OrdemServicoService" as OSService
+participant "NotificacaoService" as Notif
+database "PostgreSQL" as DB
+boundary "Sistema de Pagamento" as SP
+boundary "Servico SMTP" as SMTP
+
+Funcionario -> Controller: POST /pagamentos\n(ordemServicoId, metodo, valor, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: registrar(ordemServicoId, metodo, valor, funcionarioId)
+activate Service
+
+Service -> OSRepo: findById(ordemServicoId)
+activate OSRepo
+OSRepo -> DB: SELECT ordem_servico
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+alt metodo = Dinheiro
+    note right of Service: Confirmacao manual,\nsem integracao externa.
+    Service -> Service: statusPagamento = Aprovado
+else metodo = Cartao ou Pix
+    Service -> SPClient: processar(valor, metodo, dadosTransacao)
+    activate SPClient
+    SPClient -> SP: POST /transacoes (HTTPS)
+    activate SP
+    SP --> SPClient: statusPagamento, idTransacao
+    deactivate SP
+    SPClient --> Service: statusPagamento, idTransacao
+    deactivate SPClient
+end
+
+Service -> PagRepo: create(ordemServicoId, metodo, valor, status, idTransacao)
+activate PagRepo
+PagRepo -> DB: INSERT INTO pagamento
+PagRepo --> Service: pagamento
+deactivate PagRepo
+
+alt statusPagamento = Aprovado
+    Service -> OSService: alterarStatus(ordemServicoId, AguardandoPagamento -> proximoStatus)
+    activate OSService
+    OSService -> DB: UPDATE ordem_servico\n+ INSERT historico_status
+    OSService --> Service: ok
+    deactivate OSService
+
+    Service ->> Notif: enviarEmailConclusao(clienteEmail, ordemServicoId)
+    activate Notif
+    Notif ->> SMTP: SMTP send
+    deactivate Notif
+
+    Service --> Controller: pagamentoDTO (Aprovado)
+else statusPagamento = Recusado
+    note right of Service: Ordem de Servico permanece em\nAguardandoPagamento.
+    Service --> Controller: pagamentoDTO (Recusado)
+else statusPagamento = Pendente
+    Service --> Controller: pagamentoDTO (Pendente)
+end
+
+deactivate Service
+
+Controller --> Funcionario: 200 OK\npagamentoDTO
+deactivate Controller
+
+SMTP -->> Cliente: e-mail de conclusao
+@enduml

@@ -1,0 +1,163 @@
+@startuml
+abstract class Usuario {
+  +id: int
+  +nome: string
+  +email: string
+  -senha: string
+  +ativo: boolean
+  +dataCadastro: date
+  +autenticar(senha: string): boolean
+}
+
+class Funcionario {
+  +matricula: string
+}
+
+class Gerente {
+}
+
+class Cliente {
+  +id: int
+  +nome: string
+  +cpf: string
+  +telefone: string
+  +email: string
+  +endereco: string
+  +dataCadastro: date
+  +validarCPF(): boolean
+}
+
+class Equipamento {
+  +id: int
+  +tipo: string
+  +marca: string
+  +modelo: string
+  +numeroSerie: string
+  +observacoes: string
+}
+
+class OrdemServico {
+  +id: int
+  +codigo: string
+  +problemaRelatado: string
+  +status: StatusOrdemServico
+  +dataAbertura: datetime
+  +dataFinalizacao: datetime
+  +alterarStatus(novo: StatusOrdemServico)
+}
+
+class Diagnostico {
+  +id: int
+  +analiseTecnica: string
+  +causaIdentificada: string
+  +dataRegistro: datetime
+}
+
+class Orcamento {
+  +id: int
+  +valorTotal: decimal
+  +status: StatusOrcamento
+  +dataGeracao: datetime
+  +calcularTotal(): decimal
+}
+
+class ItemOrcamento {
+  +id: int
+  +tipo: TipoItem
+  +quantidade: int
+  +precoUnitario: decimal
+  +subtotal: decimal
+}
+
+class Servico {
+  +id: int
+  +nome: string
+  +descricao: string
+  +precoPadrao: decimal
+  +ativo: boolean
+}
+
+class Peca {
+  +id: int
+  +nome: string
+  +codigo: string
+  +precoUnitario: decimal
+  +saldoEstoque: int
+  +ativo: boolean
+  +verificarDisponibilidade(qtd: int): boolean
+  +debitarEstoque(qtd: int)
+}
+
+class Pagamento {
+  +id: int
+  +metodo: MetodoPagamento
+  +valor: decimal
+  +status: StatusPagamento
+  +dataRegistro: datetime
+  +idTransacao: string
+}
+
+class HistoricoStatus {
+  +id: int
+  +statusAnterior: StatusOrdemServico
+  +statusNovo: StatusOrdemServico
+  +dataAlteracao: datetime
+  +observacao: string
+}
+
+enum StatusOrdemServico {
+  Aberta
+  EmDiagnostico
+  AguardandoOrcamento
+  AguardandoAprovacao
+  OrcamentoAprovado
+  OrcamentoRecusado
+  EmManutencao
+  AguardandoPeca
+  ServicoConcluido
+  AguardandoPagamento
+  Finalizada
+  Cancelada
+}
+
+enum StatusOrcamento {
+  AguardandoAprovacao
+  Aprovado
+  Recusado
+}
+
+enum StatusPagamento {
+  Aprovado
+  Recusado
+  Pendente
+}
+
+enum MetodoPagamento {
+  Dinheiro
+  CartaoCredito
+  CartaoDebito
+  Pix
+}
+
+enum TipoItem {
+  Servico
+  Peca
+}
+
+Usuario <|-- Funcionario
+Usuario <|-- Gerente
+
+Cliente "1" -- "0..*" Equipamento
+Cliente "1" -- "0..*" OrdemServico
+Equipamento "1" -- "0..*" OrdemServico
+Funcionario "1" -- "0..*" OrdemServico : responsavel
+
+OrdemServico "1" *-- "0..1" Diagnostico
+OrdemServico "1" *-- "0..1" Orcamento
+OrdemServico "1" *-- "0..*" HistoricoStatus
+OrdemServico "1" -- "0..*" Pagamento
+
+Orcamento "1" *-- "1..*" ItemOrcamento
+ItemOrcamento "0..*" -- "0..1" Servico
+ItemOrcamento "0..*" -- "0..1" Peca
+@enduml

@@ -1,0 +1,57 @@
+@startuml visao-subsistemas
+left to right direction
+actor Funcionario
+actor Gerente
+actor Cliente
+
+package "ReparoTech" <<subsystem>> {
+  package "Frontend\n(Angular 21)" <<subsystem>> as Frontend
+  package "Backend\n(Next.js + Prisma)" <<subsystem>> as Backend
+  database "PostgreSQL" as DB
+
+  Frontend ..> Backend : REST + JWT (HTTPS)
+  Backend ..> DB : SQL via Prisma
+}
+
+package "Sistema de Pagamento" <<external system>> as SP
+package "Servico SMTP" <<external system>> as SMTP
+
+Funcionario ..> Frontend : HTTPS
+Gerente ..> Frontend : HTTPS
+Backend ..> SP : HTTPS REST
+Backend ..> SMTP : envio assincrono
+SMTP ..> Cliente : e-mail de notificacao
+@enduml
+
+@startuml visao-camadas
+package "Apresentacao" <<layer>> {
+  [Web App\n(Angular 21)] <<component>>
+}
+
+package "Aplicacao" <<layer>> {
+  [Controllers REST] <<component>>
+  [Application Services] <<component>>
+}
+
+package "Dominio" <<layer>> {
+  [Entidades] <<component>>
+  [Regras de Negocio] <<component>>
+  [Enums e Value Objects] <<component>>
+}
+
+package "Infraestrutura" <<layer>> {
+  [Repositories (Prisma)] <<component>>
+  [Auth Middleware (JWT)] <<component>>
+  [Clients HTTP/SMTP] <<component>>
+}
+
+Apresentacao ..> Aplicacao : depende
+Aplicacao ..> Dominio : depende
+Dominio ..> Infraestrutura : depende
+
+note right of Infraestrutura
+  Layered classico: cada camada
+  depende apenas da camada
+  imediatamente inferior.
+end note
+@enduml

@@ -1,0 +1,46 @@
+@startuml
+[*] --> Aberta : abrirOrdemServico (UC-03)
+
+Aberta --> EmDiagnostico : iniciarDiagnostico (UC-04)
+Aberta --> Cancelada : cancelar
+
+state EmAtendimento {
+    state EmDiagnostico
+    state AguardandoOrcamento
+    state EmManutencao
+    state AguardandoPeca
+    state ServicoConcluido
+
+    EmDiagnostico --> AguardandoOrcamento : registrarDiagnostico (UC-04)
+    EmManutencao --> AguardandoPeca : solicitarPeca\n(estoque insuficiente)
+    AguardandoPeca --> EmManutencao : pecaRecebida
+    EmManutencao --> ServicoConcluido : concluirServico (UC-08)
+}
+
+AguardandoOrcamento --> AguardandoAprovacao : confirmarOrcamento (UC-05)
+AguardandoAprovacao --> OrcamentoAprovado : aprovar (UC-06)
+AguardandoAprovacao --> OrcamentoRecusado : recusar (UC-06)
+OrcamentoAprovado --> EmManutencao : iniciarManutencao (UC-08)
+OrcamentoRecusado --> Cancelada : cancelarOS
+
+ServicoConcluido --> AguardandoPagamento : iniciarPagamento (UC-09)
+AguardandoPagamento --> AguardandoPagamento : pagamentoRecusado (UC-09)
+AguardandoPagamento --> Finalizada : pagamentoAprovado (UC-09)
+Finalizada --> [*] : retirarEquipamento (UC-11)
+Cancelada --> [*]
+
+note right of EmAtendimento
+  Super-estado que agrupa as fases
+  operacionais internas. E visitado
+  em dois momentos:
+  1) Diagnostico + montagem do orcamento
+  2) Manutencao + conclusao do servico
+end note
+
+note bottom of AguardandoPagamento
+  Toda transicao de estado dispara
+  HistoricoStatus.create(ordemServicoId,
+    statusAnterior, statusNovo,
+    dataAlteracao, funcionarioId).
+end note
+@enduml

@@ -1,0 +1,44 @@
+@startuml dss-uc09-registrar-pagamento
+actor Funcionario
+actor Cliente
+participant ":Sistema" as Sistema
+actor ":SistemaPagamento" as SP
+
+Funcionario -> Sistema: selecionarOrdemServico(ordemServicoId)
+activate Sistema
+note right of Sistema: Ordem de Servico deve estar em\nServicoConcluido ou\nAguardandoPagamento
+Sistema --> Funcionario: valorTotal
+deactivate Sistema
+
+Funcionario -> Sistema: registrarPagamento(ordemServicoId, metodo, valor)
+activate Sistema
+
+alt Metodo = dinheiro
+    note right of Sistema: Confirmacao manual\nsem integracao externa
+    Sistema -> Sistema: registrarPagamentoAprovado(ordemServicoId)
+else Metodo = cartao ou pix
+    Sistema -> SP: processarPagamento(valor, metodo, dadosTransacao)
+    activate SP
+    SP --> Sistema: statusPagamento
+    deactivate SP
+end
+
+alt statusPagamento = Aprovado
+    Sistema --> Funcionario: pagamentoConfirmado
+    Sistema ->> Cliente: notificarConclusao(email)
+    note left: Notificacao assincrona\npor e-mail
+else statusPagamento = Recusado
+    note right of Sistema: Ordem de Servico permanece em\nAguardandoPagamento
+    Sistema --> Funcionario: pagamentoRecusado(motivo)
+else statusPagamento = Pendente
+    Sistema --> Funcionario: aguardandoConfirmacao
+    loop Ate confirmacao
+        Sistema -> SP: consultarStatus(transacaoId)
+        activate SP
+        SP --> Sistema: statusAtualizado
+        deactivate SP
+    end
+end
+
+deactivate Sistema
+@enduml

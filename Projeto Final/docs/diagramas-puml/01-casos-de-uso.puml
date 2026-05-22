@@ -1,0 +1,50 @@
+@startuml
+left to right direction
+
+actor Cliente
+actor Funcionario
+actor Gerente
+actor SistemaPagamento
+
+' --- Operações do Funcionário ---
+Funcionario --> (Cadastrar Cliente)
+Funcionario --> (Cadastrar Equipamento)
+Funcionario --> (Abrir Ordem de Servico)
+Funcionario --> (Registrar Diagnostico)
+Funcionario --> (Gerar Orcamento)
+Funcionario --> (Executar Servico)
+Funcionario --> (Registrar Pagamento)
+Funcionario --> (Finalizar Ordem de Servico)
+Funcionario --> (Registrar Retirada do Equipamento)
+
+' --- Cliente ---
+Cliente --> (Aprovar ou Recusar Orcamento)
+
+' --- Gerente herda do Funcionario ---
+Gerente --|> Funcionario
+Gerente --> (Gerenciar Pecas e Estoque)
+Gerente --> (Gerenciar Servicos e Precos)
+Gerente --> (Gerenciar Funcionarios)
+Gerente --> (Gerar Relatorios Gerenciais)
+
+' --- Sistema de Pagamento ---
+(Registrar Pagamento) --> SistemaPagamento
+
+' --- Relações <<include>> ---
+(Abrir Ordem de Servico) ..> (Autenticar Usuario) : <<include>>
+(Registrar Diagnostico) ..> (Autenticar Usuario) : <<include>>
+(Gerar Orcamento) ..> (Autenticar Usuario) : <<include>>
+(Executar Servico) ..> (Autenticar Usuario) : <<include>>
+(Registrar Pagamento) ..> (Autenticar Usuario) : <<include>>
+(Finalizar Ordem de Servico) ..> (Autenticar Usuario) : <<include>>
+
+(Executar Servico) ..> (Registrar Uso de Pecas) : <<include>>
+(Registrar Uso de Pecas) ..> (Verificar Estoque) : <<include>>
+(Registrar Pagamento) ..> (Confirmar Pagamento) : <<include>>
+
+' --- Relações <<extend>> ---
+(Abrir Ordem de Servico) ..> (Cancelar Ordem de Servico) : <<extend>>
+(Gerar Orcamento) ..> (Recusar Orcamento) : <<extend>>
+(Finalizar Ordem de Servico) ..> (Registrar Retirada do Equipamento) : <<extend>>
+
+@enduml
