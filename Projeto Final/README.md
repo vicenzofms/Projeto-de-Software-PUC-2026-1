@@ -190,7 +190,6 @@ São **11 tabelas no PostgreSQL**, derivadas diretamente do diagrama de classes:
 ```
 .
 ├── 📘 README.md                                # Este arquivo
-├── ⚖️ LICENSE                                  # Licença do projeto
 └── 📁 docs/
     ├── 📁 diagramas-puml/                      # 🛠 Fontes (PlantUML + Graphviz DOT)
     │   ├── 01-casos-de-uso.puml
