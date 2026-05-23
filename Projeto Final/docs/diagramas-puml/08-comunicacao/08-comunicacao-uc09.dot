@@ -1,0 +1,85 @@
+digraph DiagramaComunicacao {
+    rankdir=TB;
+    bgcolor="white";
+    labelloc="t";
+    fontname="Arial";
+    fontsize=14;
+    label="Diagrama de Comunicacao - UC-09 Registrar Pagamento";
+    nodesep=1.0;
+    ranksep=1.2;
+    compound=true;
+
+    node [
+        shape=box,
+        color="black",
+        fontname="Arial",
+        fontsize=11,
+        margin="0.20,0.10"
+    ];
+
+    edge [
+        fontname="Arial",
+        fontsize=10,
+        color="black",
+        fontcolor="black",
+        dir=none
+    ];
+
+    // ===== Atores =====
+    funcionario [label=<<U>:Funcionario</U>>];
+    cliente     [label=<<U>:Cliente</U>>];
+
+    // ===== API Interna =====
+    controller [label=<<U>:PagamentoController</U>>];
+    auth       [label=<<U>:AuthMiddleware</U>>];
+    service    [label=<<U>:PagamentoService</U>>];
+
+    // ===== Dominio e Persistencia =====
+    osrepo    [label=<<U>:OrdemServicoRepository</U>>];
+    pagrepo   [label=<<U>:PagamentoRepository</U>>];
+    osservice [label=<<U>:OrdemServicoService</U>>];
+    db        [label=<<U>:PostgreSQL</U>>];
+
+    // ===== Sistemas Externos =====
+    spclient [label=<<U>:SistemaPagamentoClient</U>>];
+    sp       [label=<<U>:SistemaPagamentoExterno</U>>];
+    notif    [label=<<U>:NotificacaoService</U>>];
+    smtp     [label=<<U>:ServicoSMTP</U>>];
+
+    // Alinhamentos horizontais por camada
+    { rank=same; auth; service; }
+    { rank=same; osrepo; pagrepo; osservice; spclient; notif; }
+    { rank=same; db; sp; smtp; }
+
+    // ===== Mensagens (numeracao de Larman) =====
+
+    // 1 - mensagem inicial do ator
+    funcionario -> controller [label=<1: POST /pagamentos(ordemServicoId, metodo, valor, JWT) &#8595;<BR/>1*: 200 OK pagamentoDTO &#8593;>];
+
+    // 1.1 - validacao de token
+    controller -> auth [label=<1.1: validarToken(JWT) &#8595;<BR/>1.1: payloadUsuario &#8593;>];
+
+    // 1.2 - delegacao ao service de dominio
+    controller -> service [label=<1.2: registrar(ordemServicoId, metodo, valor, funcionarioId) &#8595;<BR/>1.2: pagamentoDTO &#8593;>];
+
+    // 1.2.1 - consulta da Ordem de Servico
+    service -> osrepo [label=<1.2.1: findById(ordemServicoId) &#8595;<BR/>1.2.1: ordemServico &#8593;>];
+    osrepo -> db [label=<1.2.1.1: SELECT ordem_servico &#8595;<BR/>1.2.1.1: row &#8593;>];
+
+    // 1.2.2 - integracao externa de pagamento (cartao ou Pix)
+    service -> spclient [label=<[metodo = Cartao | Pix]<BR/>1.2.2: processar(valor, metodo, dadosTransacao) &#8595;<BR/>1.2.2: statusPagamento, idTransacao &#8593;>];
+    spclient -> sp [label=<1.2.2.1: POST /transacoes (HTTPS) &#8595;<BR/>1.2.2.1: statusPagamento, idTransacao &#8593;>];
+
+    // 1.2.3 - persistencia do Pagamento
+    service -> pagrepo [label=<1.2.3: create(ordemServicoId, metodo, valor, status, idTransacao) &#8595;<BR/>1.2.3: pagamento &#8593;>];
+    pagrepo -> db [label=<1.2.3.1: INSERT INTO pagamento &#8595;>];
+
+    // 1.2.4 - transicao de estado da Ordem de Servico
+    service -> osservice [label=<[statusPagamento = Aprovado]<BR/>1.2.4: alterarStatus(ordemServicoId) &#8595;<BR/>1.2.4: ok &#8593;>];
+    osservice -> db [label=<1.2.4.1: UPDATE ordem_servico<BR/>+ INSERT historico_status &#8595;>];
+
+    // 1.2.5 - notificacao assincrona (sem retorno bloqueante)
+    service -> notif [label=<[statusPagamento = Aprovado] (assincrono)<BR/>1.2.5: enviarEmailConclusao(clienteEmail, ordemServicoId) &#8608;>, style=dashed];
+    notif -> smtp [label=<1.2.5.1: send (assincrono) &#8608;>, style=dashed];
+    smtp -> cliente [label=<1.2.5.2: e-mail de conclusao &#8608;>, style=dashed];
+}

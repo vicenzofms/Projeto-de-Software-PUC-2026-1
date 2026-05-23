@@ -1,0 +1,100 @@
+digraph DiagramaComunicacao {
+    rankdir=TB;
+    bgcolor="white";
+    labelloc="t";
+    fontname="Arial";
+    fontsize=14;
+    label="Diagrama de Comunicacao - UC-05 Gerar Orcamento\n(Fluxo 1: adicionar item | Fluxo 2: confirmar orcamento)";
+    nodesep=1.0;
+    ranksep=1.2;
+    compound=true;
+
+    node [
+        shape=box,
+        color="black",
+        fontname="Arial",
+        fontsize=11,
+        margin="0.20,0.10"
+    ];
+
+    edge [
+        fontname="Arial",
+        fontsize=10,
+        color="black",
+        fontcolor="black",
+        dir=none
+    ];
+
+    // ===== Ator =====
+    funcionario [label=<<U>:Funcionario</U>>];
+
+    // ===== API Interna =====
+    controller [label=<<U>:OrcamentoController</U>>];
+    auth       [label=<<U>:AuthMiddleware</U>>];
+    service    [label=<<U>:OrcamentoService</U>>];
+
+    // ===== Repositorios e dominio =====
+    osrepo    [label=<<U>:OrdemServicoRepository</U>>];
+    pecarepo  [label=<<U>:PecaRepository</U>>];
+    itemrepo  [label=<<U>:ItemOrcamentoRepository</U>>];
+    orcrepo   [label=<<U>:OrcamentoRepository</U>>];
+    osservice [label=<<U>:OrdemServicoService</U>>];
+    histrepo  [label=<<U>:HistoricoStatusRepository</U>>];
+
+    // ===== Persistencia =====
+    db [label=<<U>:PostgreSQL</U>>];
+
+    // Alinhamentos horizontais por camada
+    { rank=same; auth; service; osservice; }
+    { rank=same; osrepo; pecarepo; itemrepo; orcrepo; histrepo; }
+
+    // ===== Fluxo 1 - Adicionar item ao orcamento =====
+
+    // 1 - mensagem inicial
+    funcionario -> controller [label=<1: POST /orcamentos/:ordemServicoId/itens(tipo, itemId, quantidade, JWT) &#8595;<BR/>1*: 201 Created itemOrcamentoDTO &#8593;>];
+
+    // 1.1 - validacao de token
+    controller -> auth [label=<1.1: validarToken(JWT) &#8595;<BR/>1.1: payloadUsuario &#8593;>];
+
+    // 1.2 - delegacao ao service
+    controller -> service [label=<1.2: adicionarItem(ordemServicoId, tipo, itemId, quantidade) &#8595;<BR/>1.2: itemOrcamentoDTO &#8593;>];
+
+    // 1.2.1 - validacao da Ordem de Servico + diagnostico
+    service -> osrepo [label=<1.2.1: findByIdComDiagnostico(ordemServicoId) &#8595;<BR/>1.2.1: ordemServico &#8593;>];
+    osrepo -> db [label=<1.2.1.1: SELECT ordem_servico JOIN diagnostico &#8595;<BR/>1.2.1.1: row &#8593;>];
+
+    // 1.2.2 - consulta de peca (so se tipo=Peca)
+    service -> pecarepo [label=<[tipo = Peca]<BR/>1.2.2: findById(itemId) &#8595;<BR/>1.2.2: peca &#8593;>];
+    pecarepo -> db [label=<1.2.2.1: SELECT peca WHERE id=? &#8595;<BR/>1.2.2.1: row &#8593;>];
+
+    // 1.2.3 - auto-mensagem: verificacao de disponibilidade
+    service -> service [
+        label=<[tipo = Peca]<BR/>1.2.3: [self] peca.verificarDisponibilidade(quantidade) &#8631;>,
+        headport=e,
+        tailport=e
+    ];
+
+    // 1.2.4 - persistencia do item
+    service -> itemrepo [label=<1.2.4: create(orcamentoId, tipo, itemId, quantidade, precoUnitario) &#8595;<BR/>1.2.4: itemOrcamento &#8593;>];
+    itemrepo -> db [label=<1.2.4.1: INSERT INTO item_orcamento &#8595;>];
+
+    // 1.2.5 - recalculo do valor total
+    service -> orcrepo [label=<1.2.5: atualizarValorTotal(orcamentoId) &#8595;<BR/>1.2.5: orcamento &#8593;>];
+    orcrepo -> db [label=<1.2.5.1: UPDATE orcamento SET valor_total = SUM(itens.subtotal) &#8595;>];
+
+    // ===== Fluxo 2 - Confirmacao do orcamento =====
+
+    // 2 - mensagem inicial
+    funcionario -> controller [label=<2: POST /orcamentos/:ordemServicoId/confirmar(JWT) &#8595;<BR/>2*: 200 OK orcamentoDTO &#8593;>, style=dashed];
+
+    // 2.1 - delegacao
+    controller -> service [label=<2.1: confirmar(ordemServicoId) &#8595;<BR/>2.1: orcamentoDTO &#8593;>, style=dashed];
+
+    // 2.1.1 - atualiza status do orcamento
+    service -> orcrepo [label=<2.1.1: update(orcamentoId, status=AguardandoAprovacao) &#8595;<BR/>2.1.1: orcamento &#8593;>, style=dashed];
+
+    // 2.1.2 - transicao de status da Ordem de Servico (via OrdemServicoService)
+    service -> osservice [label=<2.1.2: alterarStatus(ordemServicoId, AguardandoAprovacao) &#8595;<BR/>2.1.2: ok &#8593;>, style=dashed];
+    osservice -> histrepo [label=<2.1.2.1: create(ordemServicoId, OrcamentoAprovado, AguardandoAprovacao, funcionarioId) &#8595;<BR/>2.1.2.1: ok &#8593;>, style=dashed];
+    histrepo -> db [label=<2.1.2.1.1: INSERT INTO historico_status &#8595;>, style=dashed];
+}

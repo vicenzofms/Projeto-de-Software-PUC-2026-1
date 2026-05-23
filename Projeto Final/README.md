@@ -21,6 +21,7 @@
 [![Versão](https://img.shields.io/badge/Vers%C3%A3o-1.0-007ec6?style=for-the-badge)](#)
 [![Disciplina](https://img.shields.io/badge/PUC%20Minas-Projeto%20de%20Software-007ec6?style=for-the-badge)](#)
 [![PlantUML](https://img.shields.io/badge/PlantUML-Diagramas-007ec6?style=for-the-badge)](https://plantuml.com/)
+[![Graphviz](https://img.shields.io/badge/Graphviz-DOT-007ec6?style=for-the-badge)](https://graphviz.org/)
 [![UML](https://img.shields.io/badge/UML-2.5-007ec6?style=for-the-badge)](https://www.omg.org/spec/UML/)
 
 ---
@@ -67,7 +68,7 @@ Este projeto entrega exclusivamente **artefatos de modelagem**:
 - ✅ **1 diagrama de implantação** baseado em Docker.
 - ✅ **1 diagrama de classes** com 13 classes + 5 enums, hierarquia abstrata e composição forte.
 - ✅ **3 diagramas de sequência detalhados** caixa-branca (Controllers → Services → Repositories → Prisma).
-- ⚠️ **1 diagrama de comunicação** TODO.
+- ✅ **3 diagramas de comunicação** (UC-03, UC-05 e UC-09) em notação Graphviz DOT, com numeração de Larman.
 - ✅ **1 diagrama de estados** da Ordem de Serviço (12 estados, super-estado, auto-loops).
 - ✅ **Esquema relacional PostgreSQL** com 11 tabelas, índices e restrições.
 - ✅ **Estratégia ORM** (Prisma + Table Per Hierarchy + soft-delete + auditoria temporal).
@@ -78,16 +79,16 @@ Este projeto entrega exclusivamente **artefatos de modelagem**:
 
 A arquitetura modelada (não implementada) considera as seguintes tecnologias:
 
-| Camada | Tecnologia | Papel |
-|---|---|---|
-| 💻 Frontend | **Angular 21** | Aplicação web no navegador do Funcionário e do Gerente. |
-| 🖥️ Backend | **Next.js (Node.js)** | API REST autenticada com JWT, organizada em 9 módulos de domínio. |
-| 🗄️ ORM | **Prisma** | Camada de persistência com cliente *type-safe* e migrações versionadas. |
-| 💾 Banco de Dados | **PostgreSQL 16** | Persistência relacional com enums nativos e CHECK constraints. |
-| 🔐 Autenticação | **JWT** | Token *stateless* validado por middleware em toda rota da API. |
-| 💳 Pagamento | **Sistema de Pagamento** (externo) | Integração síncrona via HTTPS REST para cartão e PIX. |
-| 📧 Notificação | **Serviço SMTP** (externo) | Envio assíncrono de e-mails ao Cliente. |
-| 🐳 Deploy | **Docker** | Cada subsistema (Frontend, Backend, PostgreSQL) em container próprio. |
+| Camada            | Tecnologia                         | Papel                                                                   |
+| ----------------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| 💻 Frontend       | **Angular 21**                     | Aplicação web no navegador do Funcionário e do Gerente.                 |
+| 🖥️ Backend        | **Next.js (Node.js)**              | API REST autenticada com JWT, organizada em 9 módulos de domínio.       |
+| 🗄️ ORM            | **Prisma**                         | Camada de persistência com cliente _type-safe_ e migrações versionadas. |
+| 💾 Banco de Dados | **PostgreSQL 16**                  | Persistência relacional com enums nativos e CHECK constraints.          |
+| 🔐 Autenticação   | **JWT**                            | Token _stateless_ validado por middleware em toda rota da API.          |
+| 💳 Pagamento      | **Sistema de Pagamento** (externo) | Integração síncrona via HTTPS REST para cartão e PIX.                   |
+| 📧 Notificação    | **Serviço SMTP** (externo)         | Envio assíncrono de e-mails ao Cliente.                                 |
+| 🐳 Deploy         | **Docker**                         | Cada subsistema (Frontend, Backend, PostgreSQL) em container próprio.   |
 
 ---
 
@@ -95,19 +96,19 @@ A arquitetura modelada (não implementada) considera as seguintes tecnologias:
 
 O sistema é operado por **4 atores**:
 
-| Ator | Tipo | Papel |
-|---|---|---|
-| **Cliente** | Humano externo | Receptor passivo; entrega o equipamento e aprova/recusa orçamento via funcionário. |
-| **Funcionário (Técnico)** | Humano interno | Operador do dia-a-dia: cadastros, diagnóstico, orçamento, execução, pagamento. |
-| **Gerente** | Humano interno | Herda do Funcionário e adiciona operações administrativas. |
-| **Sistema de Pagamento** | Sistema externo | Integração para processamento de pagamentos. |
+| Ator                      | Tipo            | Papel                                                                              |
+| ------------------------- | --------------- | ---------------------------------------------------------------------------------- |
+| **Cliente**               | Humano externo  | Receptor passivo; entrega o equipamento e aprova/recusa orçamento via funcionário. |
+| **Funcionário (Técnico)** | Humano interno  | Operador do dia-a-dia: cadastros, diagnóstico, orçamento, execução, pagamento.     |
+| **Gerente**               | Humano interno  | Herda do Funcionário e adiciona operações administrativas.                         |
+| **Sistema de Pagamento**  | Sistema externo | Integração para processamento de pagamentos.                                       |
 
 São **15 casos de uso** distribuídos em duas categorias:
 
-| Categoria | Casos de Uso |
-|---|---|
-| 🛎️ **Atendimento** (UC-01 a UC-11) | Cadastros, abertura/diagnóstico/orçamento/aprovação/execução/pagamento/finalização da Ordem de Serviço. |
-| 🛠️ **Administração** (UC-12 a UC-15) | Gestão de peças e estoque, serviços e preços, funcionários e relatórios gerenciais. |
+| Categoria                            | Casos de Uso                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| 🛎️ **Atendimento** (UC-01 a UC-11)   | Cadastros, abertura/diagnóstico/orçamento/aprovação/execução/pagamento/finalização da Ordem de Serviço. |
+| 🛠️ **Administração** (UC-12 a UC-15) | Gestão de peças e estoque, serviços e preços, funcionários e relatórios gerenciais.                     |
 
 ---
 
@@ -121,7 +122,7 @@ Apresenta o ReparoTech como um pacote `<<subsystem>>` formado por Frontend + Bac
 
 ### 2. Visão Lógica em Camadas
 
-Estilo arquitetural ***Layered* clássico**, com 4 camadas e dependência unidirecional descendente:
+Estilo arquitetural **_Layered_ clássico**, com 4 camadas e dependência unidirecional descendente:
 
 ```
 ┌─────────────────────────────────────────┐
@@ -141,26 +142,26 @@ Estilo arquitetural ***Layered* clássico**, com 4 camadas e dependência unidir
 └─────────────────────────────────────────┘
 ```
 
-A escolha pelo *Layered* clássico reflete o porte do projeto e prioriza **clareza didática** sem prejuízo à organização do código.
+A escolha pelo _Layered_ clássico reflete o porte do projeto e prioriza **clareza didática** sem prejuízo à organização do código.
 
 ---
 
 ## 🖼 Galeria de Diagramas
 
-Todos os diagramas estão em **`docs/diagramas-puml/`** (fontes PlantUML) e em **`docs/diagramas-img/`** (PNGs renderizados).
+Todos os diagramas estão em **`docs/diagramas-puml/`** (fontes em PlantUML para os UML e em Graphviz DOT para os de comunicação) e em **`docs/diagramas-img/`** (PNGs renderizados).
 
-| # | Diagrama | Arquivo PUML | Imagem |
-|---|---|---|---|
-| 01 | Casos de Uso | [`01-casos-de-uso.puml`](docs/diagramas-puml/01-casos-de-uso.puml) | [PNG](docs/diagramas-img/01-casos-de-uso.png) |
-| 02 | Sequência do Sistema (3 UCs) | [`02-sequencia-de-sistema/`](docs/diagramas-puml/02-sequencia-de-sistema/) | [pasta](docs/diagramas-img/02-sequencia-de-sistema/) |
-| 03 | Arquitetura (2 visões) | [`03-arquitetura.puml`](docs/diagramas-puml/03-arquitetura.puml) | [PNG](docs/diagramas-img/03-arquitetura.png) |
-| 04 | Componentes | [`04-componentes.puml`](docs/diagramas-puml/04-componentes.puml) | [PNG](docs/diagramas-img/04-componentes.png) |
-| 05 | Implantação | [`05-implantacao.puml`](docs/diagramas-puml/05-implantacao.puml) | [PNG](docs/diagramas-img/05-implantacao.png) |
-| 06 | Classes | [`06-classes.puml`](docs/diagramas-puml/06-classes.puml) | [PNG](docs/diagramas-img/06-classes.png) |
-| 07 | Sequência Detalhada (3 UCs) | [`07-sequencia-de-projeto/`](docs/diagramas-puml/07-sequencia-de-projeto/) | [pasta](docs/diagramas-img/07-sequencia-de-projeto/) |
-| 08 | Comunicação | [`08-comunicacao.puml`](docs/diagramas-puml/08-comunicacao.puml) | [PNG](docs/diagramas-img/08-comunicacao.png) |
-| 09 | Estados (Ordem de Serviço) | [`09-estados-ordem-servico.puml`](docs/diagramas-puml/09-estados-ordem-servico.puml) | [PNG](docs/diagramas-img/09-estados-ordem-servico.png) |
-| 10 | Modelo Entidade-Relacionamento | [`10-modelo-dados.puml`](docs/diagramas-puml/10-modelo-dados.puml) | [PNG](docs/diagramas-img/10-modelo-dados.png) |
+| #   | Diagrama                       | Arquivo PUML                                                                         | Imagem                                                 |
+| --- | ------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| 01  | Casos de Uso                   | [`01-casos-de-uso.puml`](docs/diagramas-puml/01-casos-de-uso.puml)                   | [PNG](docs/diagramas-img/01-casos-de-uso.png)          |
+| 02  | Sequência do Sistema (3 UCs)   | [`02-sequencia-de-sistema/`](docs/diagramas-puml/02-sequencia-de-sistema/)           | [pasta](docs/diagramas-img/02-sequencia-de-sistema/)   |
+| 03  | Arquitetura (2 visões)         | [`03-arquitetura.puml`](docs/diagramas-puml/03-arquitetura.puml)                     | [PNG](docs/diagramas-img/03-arquitetura.png)           |
+| 04  | Componentes                    | [`04-componentes.puml`](docs/diagramas-puml/04-componentes.puml)                     | [PNG](docs/diagramas-img/04-componentes.png)           |
+| 05  | Implantação                    | [`05-implantacao.puml`](docs/diagramas-puml/05-implantacao.puml)                     | [PNG](docs/diagramas-img/05-implantacao.png)           |
+| 06  | Classes                        | [`06-classes.puml`](docs/diagramas-puml/06-classes.puml)                             | [PNG](docs/diagramas-img/06-classes.png)               |
+| 07  | Sequência Detalhada (3 UCs)    | [`07-sequencia-de-projeto/`](docs/diagramas-puml/07-sequencia-de-projeto/)           | [pasta](docs/diagramas-img/07-sequencia-de-projeto/)   |
+| 08  | Comunicação (3 UCs, DOT)       | [`08-comunicacao/`](docs/diagramas-puml/08-comunicacao/)                             | [pasta](docs/diagramas-img/08-comunicacao/)            |
+| 09  | Estados (Ordem de Serviço)     | [`09-estados-ordem-servico.puml`](docs/diagramas-puml/09-estados-ordem-servico.puml) | [PNG](docs/diagramas-img/09-estados-ordem-servico.png) |
+| 10  | Modelo Entidade-Relacionamento | [`10-modelo-dados.puml`](docs/diagramas-puml/10-modelo-dados.puml)                   | [PNG](docs/diagramas-img/10-modelo-dados.png)          |
 
 > [!NOTE]
 > Os UCs **UC-03 (Abrir Ordem de Serviço)**, **UC-05 (Gerar Orçamento)** e **UC-09 (Registrar Pagamento)** foram escolhidos como casos de uso recorrentes para os diagramas comportamentais (DSS, sequência detalhada e comunicação) por representarem os fluxos mais ricos do sistema.
@@ -191,34 +192,37 @@ São **11 tabelas no PostgreSQL**, derivadas diretamente do diagrama de classes:
 ├── 📘 README.md                                # Este arquivo
 ├── ⚖️ LICENSE                                  # Licença do projeto
 └── 📁 docs/
-    ├── 📁 diagramas-puml/                      # 🛠 Fontes PlantUML
+    ├── 📁 diagramas-puml/                      # 🛠 Fontes (PlantUML + Graphviz DOT)
     │   ├── 01-casos-de-uso.puml
     │   ├── 03-arquitetura.puml                 # 2 blocos: visao-subsistemas + visao-camadas
     │   ├── 04-componentes.puml
     │   ├── 05-implantacao.puml
     │   ├── 06-classes.puml
-    │   ├── 08-comunicacao.puml                # todo
     │   ├── 09-estados-ordem-servico.puml
     │   ├── 10-modelo-dados.puml
     │   ├── 📁 02-sequencia-de-sistema/         # DSS - 1 arquivo por UC
     │   │   ├── dss-uc03-abrir-ordem-servico.puml
     │   │   ├── dss-uc05-gerar-orcamento.puml
     │   │   └── dss-uc09-registrar-pagamento.puml
-    │   └── 📁 07-sequencia-de-projeto/         # Sequência detalhada - 1 arquivo por UC
-    │       ├── seq-uc03-abrir-ordem-servico.puml
-    │       ├── seq-uc05-gerar-orcamento.puml
-    │       └── seq-uc09-registrar-pagamento.puml
+    │   ├── 📁 07-sequencia-de-projeto/         # Sequência detalhada - 1 arquivo por UC
+    │   │   ├── seq-uc03-abrir-ordem-servico.puml
+    │   │   ├── seq-uc05-gerar-orcamento.puml
+    │   │   └── seq-uc09-registrar-pagamento.puml
+    │   └── 📁 08-comunicacao/                  # Comunicação - notação Graphviz DOT, 1 arquivo por UC
+    │       ├── 08-comunicacao-uc03.dot
+    │       ├── 08-comunicacao-uc05.dot
+    │       └── 08-comunicacao-uc09.dot
     └── 📁 diagramas-img/                       # 🖼 Imagens .png renderizadas
         ├── 01-casos-de-uso.png
         ├── 03-arquitetura.png
         ├── 04-componentes.png
         ├── 05-implantacao.png
         ├── 06-classes.png
-        ├── 08-comunicacao.png                  # todo
         ├── 09-estados-ordem-servico.png
         ├── 10-modelo-dados.png
         ├── 📁 02-sequencia-de-sistema/         # 3 PNGs
-        └── 📁 07-sequencia-de-projeto/         # 3 PNGs
+        ├── 📁 07-sequencia-de-projeto/         # 3 PNGs
+        └── 📁 08-comunicacao/                  # 3 PNGs
 ```
 
 > [!NOTE]
@@ -228,11 +232,12 @@ São **11 tabelas no PostgreSQL**, derivadas diretamente do diagrama de classes:
 
 ## 🔧 Como Visualizar e Renderizar os Diagramas
 
-Os arquivos `.puml` podem ser visualizados de várias formas. As imagens já renderizadas estão prontas em `docs/diagramas-img/`, mas se precisar **regenerar** depois de uma alteração:
+O projeto usa **duas notações**: **PlantUML** (`.puml`) para todos os diagramas UML e **Graphviz DOT** (`.dot`) para os três diagramas de comunicação. As imagens já renderizadas estão prontas em `docs/diagramas-img/`, mas se precisar **regenerar** depois de uma alteração:
 
 ### 🌐 Online (mais simples)
 
-Cole o conteúdo de qualquer `.puml` em **[PlantUML Online](https://www.plantuml.com/plantuml/uml/)** e visualize/exporte como PNG/SVG.
+- **PlantUML** (`.puml`): cole o conteúdo em **[PlantUML Online](https://www.plantuml.com/plantuml/uml/)**.
+- **Graphviz DOT** (`.dot`): cole o conteúdo em **[Graphviz Online](https://dreampuf.github.io/GraphvizOnline/)** ou **[Edotor](https://edotor.net/)**.
 
 ### 💻 Localmente — PlantUML CLI
 
@@ -242,7 +247,7 @@ Cole o conteúdo de qualquer `.puml` em **[PlantUML Online](https://www.plantuml
 # Renderiza um diagrama específico
 java -jar plantuml.jar docs/diagramas-puml/01-casos-de-uso.puml
 
-# Renderiza todos os diagramas da pasta raiz
+# Renderiza todos os diagramas .puml da pasta raiz
 java -jar plantuml.jar docs/diagramas-puml/*.puml
 
 # Renderiza as pastas de sequência
@@ -250,16 +255,32 @@ java -jar plantuml.jar docs/diagramas-puml/02-sequencia-de-sistema/*.puml
 java -jar plantuml.jar docs/diagramas-puml/07-sequencia-de-projeto/*.puml
 ```
 
-### 🧩 IDE com plugin PlantUML
+### 💻 Localmente — Graphviz CLI (diagramas de comunicação)
 
-Plugins disponíveis para **VS Code** ([PlantUML extension](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml)), **IntelliJ** e **Eclipse** mostram o preview ao abrir o arquivo `.puml`.
+**Requisitos:** Graphviz instalado (`brew install graphviz` no macOS, `apt install graphviz` no Linux, ou [download oficial](https://graphviz.org/download/)).
+
+```bash
+# Renderiza um diagrama de comunicação específico
+dot -Tpng docs/diagramas-puml/08-comunicacao/08-comunicacao-uc03.dot \
+    -o docs/diagramas-img/08-comunicacao/comunicacao-uc03-abrir-ordem-servico.png
+
+# Renderiza todos os diagramas de comunicação
+for f in docs/diagramas-puml/08-comunicacao/*.dot; do
+  dot -Tpng "$f" -o "docs/diagramas-img/08-comunicacao/$(basename "${f%.dot}").png"
+done
+```
+
+### 🧩 IDE com plugins
+
+- **PlantUML**: [VS Code](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml), IntelliJ, Eclipse.
+- **Graphviz DOT**: [Graphviz Preview](https://marketplace.visualstudio.com/items?itemName=EFanZh.graphviz-preview) ou [Graphviz Interactive Preview](https://marketplace.visualstudio.com/items?itemName=tintinweb.graphviz-interactive-preview) no VS Code.
 
 ---
 
 ## 👤 Autor
 
-| 👤 Nome | :octocat: GitHub | 📤 Contato |
-|---|---|---|
+| 👤 Nome             | :octocat: GitHub                             | 📤 Contato           |
+| ------------------- | -------------------------------------------- | -------------------- |
 | **Vicenzo Fonseca** | [@vicenzofms](https://github.com/vicenzofms) | vicenzofms@gmail.com |
 
 ---

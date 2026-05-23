@@ -1,0 +1,79 @@
+digraph DiagramaComunicacao {
+    rankdir=TB;
+    bgcolor="white";
+    labelloc="t";
+    fontname="Arial";
+    fontsize=14;
+    label="Diagrama de Comunicacao - UC-03 Abrir Ordem de Servico";
+    nodesep=1.0;
+    ranksep=1.2;
+    compound=true;
+
+    node [
+        shape=box,
+        color="black",
+        fontname="Arial",
+        fontsize=11,
+        margin="0.20,0.10"
+    ];
+
+    edge [
+        fontname="Arial",
+        fontsize=10,
+        color="black",
+        fontcolor="black",
+        dir=none
+    ];
+
+    // ===== Ator =====
+    funcionario [label=<<U>:Funcionario</U>>];
+
+    // ===== API Interna =====
+    controller [label=<<U>:OrdemServicoController</U>>];
+    auth       [label=<<U>:AuthMiddleware</U>>];
+    service    [label=<<U>:OrdemServicoService</U>>];
+
+    // ===== Repositorios =====
+    clirepo  [label=<<U>:ClientesRepository</U>>];
+    eqprepo  [label=<<U>:EquipamentosRepository</U>>];
+    osrepo   [label=<<U>:OrdemServicoRepository</U>>];
+    histrepo [label=<<U>:HistoricoStatusRepository</U>>];
+
+    // ===== Persistencia =====
+    db [label=<<U>:PostgreSQL</U>>];
+
+    // Alinhamentos horizontais por camada
+    { rank=same; auth; service; }
+    { rank=same; clirepo; eqprepo; osrepo; histrepo; }
+
+    // ===== Mensagens (numeracao de Larman) =====
+
+    // 1 - mensagem inicial do ator
+    funcionario -> controller [label=<1: POST /ordens-servico(clienteId, equipamentoId, problemaRelatado, JWT) &#8595;<BR/>1*: 201 Created ordemServicoDTO &#8593;>];
+
+    // 1.1 - validacao de token
+    controller -> auth [label=<1.1: validarToken(JWT) &#8595;<BR/>1.1: payloadUsuario &#8593;>];
+
+    // 1.2 - delegacao ao service de dominio
+    controller -> service [label=<1.2: abrir(clienteId, equipamentoId, problemaRelatado, funcionarioId) &#8595;<BR/>1.2: ordemServicoDTO &#8593;>];
+
+    // 1.2.1 - validacao do cliente
+    service -> clirepo [label=<1.2.1: findById(clienteId) &#8595;<BR/>1.2.1: cliente &#8593;>];
+    clirepo -> db [label=<1.2.1.1: SELECT cliente WHERE id=? &#8595;<BR/>1.2.1.1: row &#8593;>];
+
+    // 1.2.2 - validacao do equipamento
+    service -> eqprepo [label=<1.2.2: findById(equipamentoId) &#8595;<BR/>1.2.2: equipamento &#8593;>];
+    eqprepo -> db [label=<1.2.2.1: SELECT equipamento WHERE id=? &#8595;<BR/>1.2.2.1: row &#8593;>];
+
+    // 1.2.3 - verificacao de Ordem de Servico ativa
+    service -> osrepo [label=<1.2.3: existeAtiva(equipamentoId) &#8595;<BR/>1.2.3: false &#8593;>];
+    osrepo -> db [label=<1.2.3.1: SELECT COUNT(*) FROM ordem_servico<BR/>WHERE equipamento_id=? AND status != 'Finalizada' &#8595;<BR/>1.2.3.1: count &#8593;>];
+
+    // 1.2.4 - criacao da Ordem de Servico
+    service -> osrepo [label=<1.2.4: create(clienteId, equipamentoId, problemaRelatado, status=Aberta) &#8595;<BR/>1.2.4: ordemServico &#8593;>];
+    osrepo -> db [label=<1.2.4.1: INSERT INTO ordem_servico &#8595;<BR/>1.2.4.1: row &#8593;>, constraint=false];
+
+    // 1.2.5 - registro no historico de status
+    service -> histrepo [label=<1.2.5: create(ordemServicoId, statusAnterior=null, statusNovo=Aberta, funcionarioId) &#8595;<BR/>1.2.5: ok &#8593;>];
+    histrepo -> db [label=<1.2.5.1: INSERT INTO historico_status &#8595;>];
+}
