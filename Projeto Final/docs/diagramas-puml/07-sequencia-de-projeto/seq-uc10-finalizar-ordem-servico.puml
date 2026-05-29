@@ -1,0 +1,58 @@
+@startuml seq-uc10-finalizar-ordem-servico
+actor Funcionario
+participant "OrdemServicoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "OrdemServicoService" as Service
+participant "OrdemServicoRepository" as OSRepo
+participant "PagamentoRepository" as PagRepo
+participant "HistoricoStatusRepository" as HistRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /ordens-servico/:id/finalizar (JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: finalizar(ordemServicoId, funcionarioId)
+activate Service
+
+Service -> OSRepo: findById(ordemServicoId)
+activate OSRepo
+OSRepo -> DB: SELECT ordem_servico WHERE id=?
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+Service -> PagRepo: existePagamentoAprovado(ordemServicoId)
+activate PagRepo
+PagRepo -> DB: SELECT COUNT(*) FROM pagamento WHERE ordem_servico_id=? AND status='Aprovado'
+PagRepo --> Service: pagamentoConfirmado
+deactivate PagRepo
+
+note right of Service: Regra: nao finalizar sem pagamento\nconfirmado (exceto recusa/cancelamento).
+
+opt pagamento pendente
+    Service --> Controller: erro(PagamentoPendente)
+    Controller --> Funcionario: 422 Unprocessable Entity
+end
+
+Service -> OSRepo: update(ordemServicoId, status=Finalizada, dataFinalizacao=now())
+activate OSRepo
+OSRepo -> DB: UPDATE ordem_servico SET status='Finalizada', data_finalizacao=now()
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+Service -> HistRepo: create(ordemServicoId, statusAnterior, Finalizada, funcionarioId)
+activate HistRepo
+HistRepo -> DB: INSERT INTO historico_status
+HistRepo --> Service: ok
+deactivate HistRepo
+
+Service --> Controller: ordemServicoDTO
+deactivate Service
+
+Controller --> Funcionario: 200 OK\nordemServicoDTO (pronta para retirada)
+deactivate Controller
+@enduml

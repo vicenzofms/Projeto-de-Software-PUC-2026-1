@@ -1,94 +1,86 @@
 @startuml
-top to bottom direction
+skinparam componentStyle rectangle
 
-component "Web App\n(Angular 21)" as Web <<component>>
+actor Cliente
+actor Funcionario
+actor Gerente
 
-package "API (Next.js)" {
-  [AuthModule] <<component>>
-  interface "IAutenticacao" as IAuth
-  [AuthModule] o-- IAuth : fornece
-
-  package "Modulos de Dominio" {
-    [UsuariosModule] <<component>>
-
-    [ClientesModule] <<component>>
-    interface "IClientes" as ICli
-    [ClientesModule] o-- ICli : fornece
-
-    [CatalogoModule] <<component>>
-    interface "ICatalogo" as ICat
-    [CatalogoModule] o-- ICat : fornece
-
-    [OrdemServicoModule] <<component>>
-    interface "IOrdemServico" as IOS
-    [OrdemServicoModule] o-- IOS : fornece
-
-    [OrcamentoModule] <<component>>
-    interface "IOrcamento" as IOrc
-    [OrcamentoModule] o-- IOrc : fornece
-
-    [PagamentoModule] <<component>>
-    interface "IPagamento" as IPag
-    [PagamentoModule] o-- IPag : fornece
-
-    [NotificacaoModule] <<component>>
-    interface "INotificacao" as INot
-    [NotificacaoModule] o-- INot : fornece
-
-    [RelatoriosModule] <<component>>
-  }
-
-  [Prisma ORM] <<component>>
-  interface "IPersistencia" as IPers
-  [Prisma ORM] o-- IPers : fornece
+package "Frontend" {
+  [Web App] as Web
 }
 
-database "PostgreSQL" as DB
+package "Backend (Next.js)" {
+  [API REST] as API
+
+  interface "IAutenticacao" as IAuth
+  interface "IUsuarios" as IUsr
+  interface "IClientes" as ICli
+  interface "ICatalogo" as ICat
+  interface "IOrdemServico" as IOS
+  interface "IOrcamento" as IOrc
+  interface "IPagamento" as IPag
+  interface "IRelatorios" as IRel
+  interface "INotificacao" as INot
+  interface "IPersistencia" as IPers
+
+  [AuthModule]
+  [UsuariosModule]
+  [ClientesModule]
+  [CatalogoModule]
+  [OrdemServicoModule]
+  [OrcamentoModule]
+  [PagamentoModule]
+  [RelatoriosModule]
+  [NotificacaoModule]
+
+  API -- IAuth
+  API -- IUsr
+  API -- ICli
+  API -- ICat
+  API -- IOS
+  API -- IOrc
+  API -- IPag
+  API -- IRel
+
+  IAuth --> [AuthModule]
+  IUsr --> [UsuariosModule]
+  ICli --> [ClientesModule]
+  ICat --> [CatalogoModule]
+  IOS --> [OrdemServicoModule]
+  IOrc --> [OrcamentoModule]
+  IPag --> [PagamentoModule]
+  IRel --> [RelatoriosModule]
+
+  [NotificacaoModule] -- INot
+  [OrdemServicoModule] ..> INot
+  [PagamentoModule] ..> INot
+}
+
+package "Infraestrutura" {
+  [Prisma ORM]
+  [JWT Provider]
+  database "PostgreSQL"
+}
 
 cloud "Sistema de Pagamento" as SP
 cloud "Servico SMTP" as SMTP
 
-Web ..> ICli : requer (REST)
-Web ..> ICat : requer (REST)
-Web ..> IOS : requer (REST)
-Web ..> IOrc : requer (REST)
-Web ..> IPag : requer (REST)
+Cliente --> Web
+Funcionario --> Web
+Gerente --> Web
+Web --> API : HTTP/REST
 
-[OrdemServicoModule] ..> ICli : requer
-[OrdemServicoModule] ..> ICat : requer
-[OrdemServicoModule] ..> INot : requer
+[Prisma ORM] -- IPers
+[UsuariosModule] ..> IPers : TCP/IP
+[ClientesModule] ..> IPers : TCP/IP
+[CatalogoModule] ..> IPers : TCP/IP
+[OrdemServicoModule] ..> IPers : TCP/IP
+[OrcamentoModule] ..> IPers : TCP/IP
+[PagamentoModule] ..> IPers : TCP/IP
+[RelatoriosModule] ..> IPers : TCP/IP
 
-[OrcamentoModule] ..> IOS : requer
-[OrcamentoModule] ..> ICat : requer
-
-[PagamentoModule] ..> IOS : requer
-[PagamentoModule] ..> INot : requer
-[PagamentoModule] ..> SP : HTTPS REST
-
-[RelatoriosModule] ..> ICli : requer
-[RelatoriosModule] ..> ICat : requer
-[RelatoriosModule] ..> IOS : requer
-[RelatoriosModule] ..> IOrc : requer
-[RelatoriosModule] ..> IPag : requer
-
-[NotificacaoModule] ..> SMTP : SMTP assincrono
-
-[Prisma ORM] --> DB : TCP/IP\n(protocolo PostgreSQL, porta 5432)
-
-note bottom of [AuthModule]
-  Aspectos transversais (omitidos
-  para nao poluir o diagrama):
-
-  - **IAutenticacao**: consumida por TODOS
-    os modulos da API. O AuthModule atua
-    como middleware, validando o JWT
-    antes do roteamento ao modulo de
-    destino. A Web App tambem consome
-    IAutenticacao no fluxo de login.
-
-  - **IPersistencia**: consumida por TODOS
-    os modulos de dominio e pelo proprio
-    AuthModule, que delegam a leitura e
-    escrita no PostgreSQL ao Prisma ORM.
-end note
+[AuthModule] --> [JWT Provider] : valida JWT
+[Prisma ORM] --> PostgreSQL : TCP/IP (5432)
+[PagamentoModule] --> SP : HTTPS REST
+[NotificacaoModule] --> SMTP : SMTP
 @enduml

@@ -1,0 +1,41 @@
+@startuml seq-uc13-gerenciar-servicos-precos
+actor Gerente
+participant "CatalogoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "CatalogoService" as Service
+participant "ServicoRepository" as ServRepo
+database "PostgreSQL" as DB
+
+Gerente -> Controller: POST | PUT /servicos\n(nome, descricao, precoPadrao, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario (perfil=Gerente)
+deactivate Auth
+
+note right of Controller: Regra: somente o Gerente\naltera precos padrao.
+
+Controller -> Service: gerenciarServico(operacao, dadosServico)
+activate Service
+
+alt operacao = cadastrar ou editar
+    Service -> ServRepo: create/update(dadosServico)
+    activate ServRepo
+    ServRepo -> DB: INSERT/UPDATE servico
+    ServRepo --> Service: servico
+    deactivate ServRepo
+else operacao = desativar
+    Service -> ServRepo: softDelete(servicoId)
+    activate ServRepo
+    ServRepo -> DB: UPDATE servico SET ativo=false
+    ServRepo --> Service: ok
+    deactivate ServRepo
+end
+
+Service --> Controller: servicoDTO
+deactivate Service
+
+Controller --> Gerente: 200 OK\nservicoDTO
+deactivate Controller
+@enduml

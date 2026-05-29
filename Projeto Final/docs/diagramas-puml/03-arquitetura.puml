@@ -1,57 +1,31 @@
-@startuml visao-subsistemas
-left to right direction
-actor Funcionario
-actor Gerente
-actor Cliente
+@startuml
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+title Arquitetura em Camadas (Layered) - ReparoTech
 
-package "ReparoTech" <<subsystem>> {
-  package "Frontend\n(Angular 21)" <<subsystem>> as Frontend
-  package "Backend\n(Next.js + Prisma)" <<subsystem>> as Backend
-  database "PostgreSQL" as DB
+Person(funcionario, "Funcionario", "Operacao diaria: cadastros, diagnostico, orcamento, execucao, pagamento")
+Person(gerente, "Gerente", "Administracao: catalogo, funcionarios, relatorios")
+Person_Ext(cliente, "Cliente", "Recebe notificacoes por e-mail")
 
-  Frontend ..> Backend : REST + JWT (HTTPS)
-  Backend ..> DB : SQL via Prisma
+System_Boundary(reparotech, "ReparoTech") {
+  Container(apresentacao, "Camada de Apresentacao", "Angular 21", "Web App SPA no navegador do Funcionario e do Gerente")
+  Container(aplicacao, "Camada de Aplicacao", "Next.js", "Controllers REST + Application Services (orquestram os casos de uso)")
+  Container(dominio, "Camada de Dominio", "TypeScript", "Entidades, Regras de Negocio, Enums e Value Objects")
+  Container(infraestrutura, "Camada de Infraestrutura", "Prisma + JWT", "Repositories, Auth Middleware (JWT) e Clients HTTP/SMTP")
+  ContainerDb(db, "PostgreSQL", "PostgreSQL 16", "Persistencia relacional")
 }
 
-package "Sistema de Pagamento" <<external system>> as SP
-package "Servico SMTP" <<external system>> as SMTP
+System_Ext(pagamento, "Sistema de Pagamento", "Processa cartao e Pix")
+System_Ext(smtp, "Servico SMTP", "Envio de e-mails ao cliente")
 
-Funcionario ..> Frontend : HTTPS
-Gerente ..> Frontend : HTTPS
-Backend ..> SP : HTTPS REST
-Backend ..> SMTP : envio assincrono
-SMTP ..> Cliente : e-mail de notificacao
-@enduml
-
-@startuml visao-camadas
-package "Apresentacao" <<layer>> {
-  [Web App\n(Angular 21)] <<component>>
-}
-
-package "Aplicacao" <<layer>> {
-  [Controllers REST] <<component>>
-  [Application Services] <<component>>
-}
-
-package "Dominio" <<layer>> {
-  [Entidades] <<component>>
-  [Regras de Negocio] <<component>>
-  [Enums e Value Objects] <<component>>
-}
-
-package "Infraestrutura" <<layer>> {
-  [Repositories (Prisma)] <<component>>
-  [Auth Middleware (JWT)] <<component>>
-  [Clients HTTP/SMTP] <<component>>
-}
-
-Apresentacao ..> Aplicacao : depende
-Aplicacao ..> Dominio : depende
-Dominio ..> Infraestrutura : depende
-
-note right of Infraestrutura
-  Layered classico: cada camada
-  depende apenas da camada
-  imediatamente inferior.
-end note
+Rel(funcionario, apresentacao, "Usa", "HTTPS")
+Rel(gerente, apresentacao, "Usa", "HTTPS")
+Rel_D(apresentacao, aplicacao, "depende de", "REST/JSON + JWT")
+Rel_D(aplicacao, dominio, "depende de")
+Rel_D(dominio, infraestrutura, "depende de")
+Rel_D(infraestrutura, db, "le e persiste", "SQL via Prisma")
+Rel(infraestrutura, pagamento, "processa pagamentos", "HTTPS REST")
+Rel(infraestrutura, smtp, "envia notificacoes", "SMTP assincrono")
+Rel(smtp, cliente, "notifica", "e-mail")
 @enduml

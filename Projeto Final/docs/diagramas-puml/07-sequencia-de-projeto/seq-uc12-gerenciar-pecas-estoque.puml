@@ -1,0 +1,51 @@
+@startuml seq-uc12-gerenciar-pecas-estoque
+actor Gerente
+participant "CatalogoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "CatalogoService" as Service
+participant "PecaRepository" as PecaRepo
+participant "OrdemServicoRepository" as OSRepo
+database "PostgreSQL" as DB
+
+Gerente -> Controller: POST | PUT | DELETE /pecas\n(dadosPeca, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario (perfil=Gerente)
+deactivate Auth
+
+note right of Controller: Regra: somente o Gerente\nacessa esta operacao.
+
+Controller -> Service: gerenciarPeca(operacao, dadosPeca)
+activate Service
+
+alt operacao = cadastrar ou reabastecer
+    Service -> PecaRepo: create/update(dadosPeca)
+    activate PecaRepo
+    PecaRepo -> DB: INSERT/UPDATE peca
+    PecaRepo --> Service: peca
+    deactivate PecaRepo
+else operacao = remover
+    Service -> OSRepo: existeOrdemAtivaComPeca(pecaId)
+    activate OSRepo
+    OSRepo -> DB: SELECT COUNT(*) ordem_servico ativa com a peca
+    OSRepo --> Service: vinculada
+    deactivate OSRepo
+    opt peca vinculada a Ordem de Servico ativa
+        Service --> Controller: erro(PecaVinculada)
+        Controller --> Gerente: 409 Conflict
+    end
+    Service -> PecaRepo: softDelete(pecaId)
+    activate PecaRepo
+    PecaRepo -> DB: UPDATE peca SET ativo=false
+    PecaRepo --> Service: ok
+    deactivate PecaRepo
+end
+
+Service --> Controller: pecaDTO
+deactivate Service
+
+Controller --> Gerente: 200 OK\npecaDTO
+deactivate Controller
+@enduml

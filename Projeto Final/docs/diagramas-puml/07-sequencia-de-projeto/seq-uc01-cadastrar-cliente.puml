@@ -1,0 +1,50 @@
+@startuml seq-uc01-cadastrar-cliente
+actor Funcionario
+participant "ClientesController" as Controller
+participant "AuthMiddleware" as Auth
+participant "ClientesService" as Service
+participant "ClientesRepository" as CliRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /clientes\n(nome, cpf, telefone, email, endereco, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: cadastrar(nome, cpf, telefone, email, endereco)
+activate Service
+
+Service -> Service: validarCPF(cpf)
+note right of Service: Regra de negocio:\nCPF valido e unico.
+
+opt CPF invalido
+    Service --> Controller: erro(CPFInvalido)
+    Controller --> Funcionario: 422 Unprocessable Entity
+end
+
+Service -> CliRepo: findByCpf(cpf)
+activate CliRepo
+CliRepo -> DB: SELECT cliente WHERE cpf=?
+CliRepo --> Service: clienteExistente ou null
+deactivate CliRepo
+
+opt CPF ja cadastrado
+    Service --> Controller: erro(ClienteJaCadastrado)
+    Controller --> Funcionario: 409 Conflict (oferece carregar existente)
+end
+
+Service -> CliRepo: create(nome, cpf, telefone, email, endereco)
+activate CliRepo
+CliRepo -> DB: INSERT INTO cliente
+CliRepo --> Service: cliente
+deactivate CliRepo
+
+Service --> Controller: clienteDTO
+deactivate Service
+
+Controller --> Funcionario: 201 Created\nclienteDTO
+deactivate Controller
+@enduml

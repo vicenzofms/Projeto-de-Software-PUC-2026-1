@@ -1,0 +1,44 @@
+@startuml seq-uc11-registrar-retirada
+actor Funcionario
+participant "OrdemServicoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "OrdemServicoService" as Service
+participant "OrdemServicoRepository" as OSRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /ordens-servico/:id/retirada\n(quemRetirou, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: registrarRetirada(ordemServicoId, quemRetirou, funcionarioId)
+activate Service
+
+Service -> OSRepo: findById(ordemServicoId)
+activate OSRepo
+OSRepo -> DB: SELECT ordem_servico WHERE id=?
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+note right of Service: Regra: equipamento so e entregue\ncom Ordem de Servico Finalizada.
+
+opt Ordem de Servico nao finalizada
+    Service --> Controller: erro(OrdemNaoFinalizada)
+    Controller --> Funcionario: 422 Unprocessable Entity
+end
+
+Service -> OSRepo: registrarRetirada(ordemServicoId, quemRetirou)
+activate OSRepo
+OSRepo -> DB: UPDATE ordem_servico SET retirada_por=?, data_retirada=now()
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+Service --> Controller: ordemServicoDTO
+deactivate Service
+
+Controller --> Funcionario: 200 OK\nordemServicoDTO (equipamento entregue)
+deactivate Controller
+@enduml

@@ -1,0 +1,50 @@
+@startuml seq-uc15-gerar-relatorios-gerenciais
+actor Gerente
+participant "RelatoriosController" as Controller
+participant "AuthMiddleware" as Auth
+participant "RelatoriosService" as Service
+participant "OrdemServicoRepository" as OSRepo
+participant "PagamentoRepository" as PagRepo
+participant "PecaRepository" as PecaRepo
+database "PostgreSQL" as DB
+
+Gerente -> Controller: GET /relatorios?tipo=&periodo=\n(JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario (perfil=Gerente)
+deactivate Auth
+
+note right of Controller: Regra: somente o Gerente\ngera relatorios consolidados.
+
+Controller -> Service: gerar(tipo, periodo)
+activate Service
+
+Service -> OSRepo: agregarPorStatusEPeriodo(periodo)
+activate OSRepo
+OSRepo -> DB: SELECT ... GROUP BY status
+OSRepo --> Service: dadosOrdens
+deactivate OSRepo
+
+Service -> PagRepo: somarFaturamento(periodo)
+activate PagRepo
+PagRepo -> DB: SELECT SUM(valor) WHERE status='Aprovado'
+PagRepo --> Service: faturamento
+deactivate PagRepo
+
+Service -> PecaRepo: pecasMaisUtilizadas(periodo)
+activate PecaRepo
+PecaRepo -> DB: SELECT ... ORDER BY total DESC
+PecaRepo --> Service: rankingPecas
+deactivate PecaRepo
+
+Service -> Service: consolidarRelatorio(dadosOrdens, faturamento, rankingPecas)
+note right of Service: Tipos: faturamento, produtividade,\npecas mais utilizadas, tempo medio,\nOrdem de Servico por status.
+
+Service --> Controller: relatorioDTO
+deactivate Service
+
+Controller --> Gerente: 200 OK\nrelatorioDTO (exportavel em PDF/CSV)
+deactivate Controller
+@enduml

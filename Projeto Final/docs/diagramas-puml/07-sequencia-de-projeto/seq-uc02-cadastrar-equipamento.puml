@@ -1,0 +1,56 @@
+@startuml seq-uc02-cadastrar-equipamento
+actor Funcionario
+participant "ClientesController" as Controller
+participant "AuthMiddleware" as Auth
+participant "ClientesService" as Service
+participant "ClientesRepository" as CliRepo
+participant "EquipamentosRepository" as EqpRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /clientes/:clienteId/equipamentos\n(tipo, marca, modelo, numeroSerie, observacoes, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: cadastrarEquipamento(clienteId, tipo, marca, modelo, numeroSerie, observacoes)
+activate Service
+
+Service -> CliRepo: findById(clienteId)
+activate CliRepo
+CliRepo -> DB: SELECT cliente WHERE id=?
+CliRepo --> Service: cliente
+deactivate CliRepo
+
+note right of Service: Regra de negocio:\ntodo equipamento pertence a\num cliente cadastrado.
+
+opt cliente nao encontrado
+    Service --> Controller: erro(ClienteNaoEncontrado)
+    Controller --> Funcionario: 404 Not Found
+end
+
+Service -> EqpRepo: findByNumeroSerie(numeroSerie)
+activate EqpRepo
+EqpRepo -> DB: SELECT equipamento WHERE numero_serie=?
+EqpRepo --> Service: equipamentoExistente ou null
+deactivate EqpRepo
+
+opt numero de serie ja cadastrado
+    Service --> Controller: equipamentoDTO (existente)
+    Controller --> Funcionario: 200 OK (reutilizar equipamento)
+end
+
+Service -> EqpRepo: create(clienteId, tipo, marca, modelo, numeroSerie, observacoes)
+activate EqpRepo
+EqpRepo -> DB: INSERT INTO equipamento
+EqpRepo --> Service: equipamento
+deactivate EqpRepo
+
+Service --> Controller: equipamentoDTO
+deactivate Service
+
+Controller --> Funcionario: 201 Created\nequipamentoDTO
+deactivate Controller
+@enduml

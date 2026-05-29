@@ -62,12 +62,12 @@ Este projeto entrega exclusivamente **artefatos de modelagem**:
 - ✅ **15 casos de uso** detalhados — com fluxos principal, alternativo e de exceção, pré e pós-condições, e regras de negócio.
 - ✅ **4 contratos de operação** (estilo Larman) para as operações de fronteira centrais.
 - ✅ **1 diagrama de casos de uso** com relações `<<include>>` e `<<extend>>`.
-- ✅ **3 Diagramas de Sequência do Sistema (DSS)** em notação caixa-preta.
-- ✅ **2 visões arquiteturais** em UML (Subsistemas + Layered/Camadas).
-- ✅ **1 diagrama de componentes** com interfaces lollipop (`o--` fornece, `..>` requer).
+- ✅ **1 Diagrama de Sequência do Sistema (DSS)** — panorama ponta-a-ponta do sistema completo, organizado em fases por caso de uso.
+- ✅ **1 visão arquitetural** em camadas (_Layered_).
+- ✅ **1 diagrama de componentes** em packages (Frontend, Backend, Infraestrutura) com interfaces lollipop (`--` fornece, `..>` requer).
 - ✅ **1 diagrama de implantação** baseado em Docker.
 - ✅ **1 diagrama de classes** com 13 classes + 5 enums, hierarquia abstrata e composição forte.
-- ✅ **3 diagramas de sequência detalhados** caixa-branca (Controllers → Services → Repositories → Prisma).
+- ✅ **15 diagramas de sequência** detalhados (um por caso de uso), caixa-branca (Controllers → Services → Repositories → Prisma).
 - ✅ **3 diagramas de comunicação** (UC-03, UC-05 e UC-09) em notação Graphviz DOT, com numeração de Larman.
 - ✅ **1 diagrama de estados** da Ordem de Serviço (12 estados, super-estado, auto-loops).
 - ✅ **Esquema relacional PostgreSQL** com 11 tabelas, índices e restrições.
@@ -114,15 +114,7 @@ São **15 casos de uso** distribuídos em duas categorias:
 
 ## 🏗 Visão Arquitetural
 
-A arquitetura é descrita por **dois diagramas UML de pacotes complementares**:
-
-### 1. Visão de Subsistemas
-
-Apresenta o ReparoTech como um pacote `<<subsystem>>` formado por Frontend + Backend + PostgreSQL, e suas relações com os atores e com dois sistemas externos (Sistema de Pagamento e Serviço SMTP, ambos `<<external system>>`).
-
-### 2. Visão Lógica em Camadas
-
-Estilo arquitetural **_Layered_ clássico**, com 4 camadas e dependência unidirecional descendente:
+A arquitetura segue o estilo **_Layered_ clássico**, representada por um diagrama em camadas (PlantUML) com legenda e ícones de ator. São 4 camadas com dependência unidirecional descendente:
 
 ```
 ┌─────────────────────────────────────────┐
@@ -142,7 +134,7 @@ Estilo arquitetural **_Layered_ clássico**, com 4 camadas e dependência unidir
 └─────────────────────────────────────────┘
 ```
 
-A escolha pelo _Layered_ clássico reflete o porte do projeto e prioriza **clareza didática** sem prejuízo à organização do código.
+Cada camada depende apenas da camada imediatamente inferior. A camada de **Infraestrutura** concentra a persistência (Prisma + PostgreSQL), a autenticação (JWT) e a integração com os sistemas externos (Sistema de Pagamento e Serviço SMTP). A escolha pelo _Layered_ clássico reflete o porte do projeto e prioriza **clareza didática** sem prejuízo à organização do código.
 
 ---
 
@@ -153,18 +145,18 @@ Todos os diagramas estão em **`docs/diagramas-puml/`** (fontes em PlantUML para
 | #   | Diagrama                       | Arquivo PUML                                                                         | Imagem                                                 |
 | --- | ------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | 01  | Casos de Uso                   | [`01-casos-de-uso.puml`](docs/diagramas-puml/01-casos-de-uso.puml)                   | [PNG](docs/diagramas-img/01-casos-de-uso.png)          |
-| 02  | Sequência do Sistema (3 UCs)   | [`02-sequencia-de-sistema/`](docs/diagramas-puml/02-sequencia-de-sistema/)           | [pasta](docs/diagramas-img/02-sequencia-de-sistema/)   |
-| 03  | Arquitetura (2 visões)         | [`03-arquitetura.puml`](docs/diagramas-puml/03-arquitetura.puml)                     | [PNG](docs/diagramas-img/03-arquitetura.png)           |
+| 02  | Sequência do Sistema (panorama) | [`02-sequencia-de-sistema.puml`](docs/diagramas-puml/02-sequencia-de-sistema.puml)   | [PNG](docs/diagramas-img/02-sequencia-de-sistema.png)  |
+| 03  | Arquitetura (Layered)          | [`03-arquitetura.puml`](docs/diagramas-puml/03-arquitetura.puml)                     | [PNG](docs/diagramas-img/03-arquitetura.png)           |
 | 04  | Componentes                    | [`04-componentes.puml`](docs/diagramas-puml/04-componentes.puml)                     | [PNG](docs/diagramas-img/04-componentes.png)           |
 | 05  | Implantação                    | [`05-implantacao.puml`](docs/diagramas-puml/05-implantacao.puml)                     | [PNG](docs/diagramas-img/05-implantacao.png)           |
 | 06  | Classes                        | [`06-classes.puml`](docs/diagramas-puml/06-classes.puml)                             | [PNG](docs/diagramas-img/06-classes.png)               |
-| 07  | Sequência Detalhada (3 UCs)    | [`07-sequencia-de-projeto/`](docs/diagramas-puml/07-sequencia-de-projeto/)           | [pasta](docs/diagramas-img/07-sequencia-de-projeto/)   |
+| 07  | Sequência Detalhada (15 UCs)   | [`07-sequencia-de-projeto/`](docs/diagramas-puml/07-sequencia-de-projeto/)           | [pasta](docs/diagramas-img/07-sequencia-de-projeto/)   |
 | 08  | Comunicação (3 UCs, DOT)       | [`08-comunicacao/`](docs/diagramas-puml/08-comunicacao/)                             | [pasta](docs/diagramas-img/08-comunicacao/)            |
 | 09  | Estados (Ordem de Serviço)     | [`09-estados-ordem-servico.puml`](docs/diagramas-puml/09-estados-ordem-servico.puml) | [PNG](docs/diagramas-img/09-estados-ordem-servico.png) |
 | 10  | Modelo Entidade-Relacionamento | [`10-modelo-dados.puml`](docs/diagramas-puml/10-modelo-dados.puml)                   | [PNG](docs/diagramas-img/10-modelo-dados.png)          |
 
 > [!NOTE]
-> Os UCs **UC-03 (Abrir Ordem de Serviço)**, **UC-05 (Gerar Orçamento)** e **UC-09 (Registrar Pagamento)** foram escolhidos como casos de uso recorrentes para os diagramas comportamentais (DSS, sequência detalhada e comunicação) por representarem os fluxos mais ricos do sistema.
+> O **Diagrama de Sequência do Sistema** (Seção 2.3) é um panorama único que percorre o fluxo completo do sistema em fases por caso de uso. Os **diagramas de sequência detalhados** (Seção 3.4) cobrem os **15 casos de uso**, um por arquivo. Já os **diagramas de comunicação** (Seção 3.5) usam apenas **UC-03**, **UC-05** e **UC-09** — escolhidos por representarem os fluxos mais ricos do sistema.
 
 ---
 
@@ -193,34 +185,32 @@ São **11 tabelas no PostgreSQL**, derivadas diretamente do diagrama de classes:
 └── 📁 docs/
     ├── 📁 diagramas-puml/                      # 🛠 Fontes (PlantUML + Graphviz DOT)
     │   ├── 01-casos-de-uso.puml
-    │   ├── 03-arquitetura.puml                 # 2 blocos: visao-subsistemas + visao-camadas
+    │   ├── 02-sequencia-de-sistema.puml        # DSS - panorama unico do sistema completo
+    │   ├── 03-arquitetura.puml                 # arquitetura em camadas (Layered)
     │   ├── 04-componentes.puml
     │   ├── 05-implantacao.puml
     │   ├── 06-classes.puml
     │   ├── 09-estados-ordem-servico.puml
     │   ├── 10-modelo-dados.puml
-    │   ├── 📁 02-sequencia-de-sistema/         # DSS - 1 arquivo por UC
-    │   │   ├── dss-uc03-abrir-ordem-servico.puml
-    │   │   ├── dss-uc05-gerar-orcamento.puml
-    │   │   └── dss-uc09-registrar-pagamento.puml
-    │   ├── 📁 07-sequencia-de-projeto/         # Sequência detalhada - 1 arquivo por UC
-    │   │   ├── seq-uc03-abrir-ordem-servico.puml
-    │   │   ├── seq-uc05-gerar-orcamento.puml
-    │   │   └── seq-uc09-registrar-pagamento.puml
+    │   ├── 📁 07-sequencia-de-projeto/         # Sequência detalhada - 15 arquivos (UC-01 a UC-15)
+    │   │   ├── seq-uc01-cadastrar-cliente.puml
+    │   │   ├── seq-uc02-cadastrar-equipamento.puml
+    │   │   ├── ... (UC-03 a UC-14, um arquivo por caso de uso)
+    │   │   └── seq-uc15-gerar-relatorios-gerenciais.puml
     │   └── 📁 08-comunicacao/                  # Comunicação - notação Graphviz DOT, 1 arquivo por UC
     │       ├── 08-comunicacao-uc03.dot
     │       ├── 08-comunicacao-uc05.dot
     │       └── 08-comunicacao-uc09.dot
     └── 📁 diagramas-img/                       # 🖼 Imagens .png renderizadas
         ├── 01-casos-de-uso.png
+        ├── 02-sequencia-de-sistema.png         # DSS panorama
         ├── 03-arquitetura.png
         ├── 04-componentes.png
         ├── 05-implantacao.png
         ├── 06-classes.png
         ├── 09-estados-ordem-servico.png
         ├── 10-modelo-dados.png
-        ├── 📁 02-sequencia-de-sistema/         # 3 PNGs
-        ├── 📁 07-sequencia-de-projeto/         # 3 PNGs
+        ├── 📁 07-sequencia-de-projeto/         # 15 PNGs
         └── 📁 08-comunicacao/                  # 3 PNGs
 ```
 
@@ -246,11 +236,10 @@ O projeto usa **duas notações**: **PlantUML** (`.puml`) para todos os diagrama
 # Renderiza um diagrama específico
 java -jar plantuml.jar docs/diagramas-puml/01-casos-de-uso.puml
 
-# Renderiza todos os diagramas .puml da pasta raiz
+# Renderiza todos os diagramas .puml da pasta raiz (inclui o DSS panorama 02-sequencia-de-sistema.puml)
 java -jar plantuml.jar docs/diagramas-puml/*.puml
 
-# Renderiza as pastas de sequência
-java -jar plantuml.jar docs/diagramas-puml/02-sequencia-de-sistema/*.puml
+# Renderiza os 15 diagramas de sequência detalhada (um por caso de uso)
 java -jar plantuml.jar docs/diagramas-puml/07-sequencia-de-projeto/*.puml
 ```
 

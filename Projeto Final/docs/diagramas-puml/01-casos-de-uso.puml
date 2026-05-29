@@ -4,47 +4,67 @@ left to right direction
 actor Cliente
 actor Funcionario
 actor Gerente
-actor SistemaPagamento
+actor "Sistema de Pagamento" as SP
 
-' --- Operações do Funcionário ---
-Funcionario --> (Cadastrar Cliente)
-Funcionario --> (Cadastrar Equipamento)
-Funcionario --> (Abrir Ordem de Servico)
-Funcionario --> (Registrar Diagnostico)
-Funcionario --> (Gerar Orcamento)
-Funcionario --> (Executar Servico)
-Funcionario --> (Registrar Pagamento)
-Funcionario --> (Finalizar Ordem de Servico)
-Funcionario --> (Registrar Retirada do Equipamento)
-
-' --- Cliente ---
-Cliente --> (Aprovar ou Recusar Orcamento)
-
-' --- Gerente herda do Funcionario ---
 Gerente --|> Funcionario
-Gerente --> (Gerenciar Pecas e Estoque)
-Gerente --> (Gerenciar Servicos e Precos)
-Gerente --> (Gerenciar Funcionarios)
-Gerente --> (Gerar Relatorios Gerenciais)
 
-' --- Sistema de Pagamento ---
-(Registrar Pagamento) --> SistemaPagamento
+rectangle "ReparoTech" {
+  package "Atendimento" {
+    usecase "UC-01\nCadastrar Cliente" as UC01
+    usecase "UC-02\nCadastrar Equipamento" as UC02
+    usecase "UC-03\nAbrir Ordem de Servico" as UC03
+    usecase "UC-04\nRegistrar Diagnostico" as UC04
+    usecase "UC-05\nGerar Orcamento" as UC05
+    usecase "UC-06\nAprovar ou Recusar Orcamento" as UC06
+    usecase "UC-07\nExecutar Servico" as UC07
+    usecase "UC-08\nRegistrar Uso de Pecas" as UC08
+    usecase "UC-09\nRegistrar Pagamento" as UC09
+    usecase "UC-10\nFinalizar Ordem de Servico" as UC10
+    usecase "UC-11\nRegistrar Retirada do Equipamento" as UC11
+  }
 
-' --- Relações <<include>> ---
-(Abrir Ordem de Servico) ..> (Autenticar Usuario) : <<include>>
-(Registrar Diagnostico) ..> (Autenticar Usuario) : <<include>>
-(Gerar Orcamento) ..> (Autenticar Usuario) : <<include>>
-(Executar Servico) ..> (Autenticar Usuario) : <<include>>
-(Registrar Pagamento) ..> (Autenticar Usuario) : <<include>>
-(Finalizar Ordem de Servico) ..> (Autenticar Usuario) : <<include>>
+  package "Administracao" {
+    usecase "UC-12\nGerenciar Pecas e Estoque" as UC12
+    usecase "UC-13\nGerenciar Servicos e Precos" as UC13
+    usecase "UC-14\nGerenciar Funcionarios" as UC14
+    usecase "UC-15\nGerar Relatorios Gerenciais" as UC15
+  }
 
-(Executar Servico) ..> (Registrar Uso de Pecas) : <<include>>
-(Registrar Uso de Pecas) ..> (Verificar Estoque) : <<include>>
-(Registrar Pagamento) ..> (Confirmar Pagamento) : <<include>>
+  usecase "Autenticar Usuario" as UCAuth
+  usecase "Verificar Estoque" as UCEstoque
+  usecase "Confirmar Pagamento" as UCConfPag
+  usecase "Cancelar Ordem de Servico" as UCCancel
+}
 
-' --- Relações <<extend>> ---
-(Abrir Ordem de Servico) ..> (Cancelar Ordem de Servico) : <<extend>>
-(Gerar Orcamento) ..> (Recusar Orcamento) : <<extend>>
-(Finalizar Ordem de Servico) ..> (Registrar Retirada do Equipamento) : <<extend>>
+Funcionario --> UC01
+Funcionario --> UC02
+Funcionario --> UC03
+Funcionario --> UC04
+Funcionario --> UC05
+Funcionario --> UC07
+Funcionario --> UC09
+Funcionario --> UC10
+Funcionario --> UC11
 
+Cliente --> UC06
+
+Gerente --> UC12
+Gerente --> UC13
+Gerente --> UC14
+Gerente --> UC15
+
+UC09 --> SP
+
+UC03 ..> UCAuth : <<include>>
+UC04 ..> UCAuth : <<include>>
+UC05 ..> UCAuth : <<include>>
+UC07 ..> UCAuth : <<include>>
+UC09 ..> UCAuth : <<include>>
+UC10 ..> UCAuth : <<include>>
+
+UC07 ..> UC08 : <<include>>
+UC08 ..> UCEstoque : <<include>>
+UC09 ..> UCConfPag : <<include>>
+
+UC03 ..> UCCancel : <<extend>>
 @enduml

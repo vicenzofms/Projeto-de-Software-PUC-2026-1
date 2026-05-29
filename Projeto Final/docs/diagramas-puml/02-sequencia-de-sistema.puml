@@ -1,0 +1,52 @@
+@startuml
+actor Funcionario
+actor Cliente
+actor Gerente
+participant ":Sistema ReparoTech" as Sistema
+participant "Sistema de Pagamento" as SP
+participant "Servico SMTP" as SMTP
+
+== Cadastros (UC-01, UC-02) ==
+Funcionario -> Sistema : cadastrarCliente(nome, cpf, contato)
+Sistema --> Funcionario : cliente cadastrado
+Funcionario -> Sistema : cadastrarEquipamento(clienteId, tipo, descricao)
+Sistema --> Funcionario : equipamento cadastrado
+
+== Abertura e Diagnostico (UC-03, UC-04) ==
+Funcionario -> Sistema : abrirOrdemServico(clienteId, equipamentoId, problema)
+Sistema --> Funcionario : Ordem de Servico (status=Aberta)
+Funcionario -> Sistema : registrarDiagnostico(ordemServicoId, analise, causa)
+Sistema --> Funcionario : status=AguardandoOrcamento
+
+== Orcamento e Aprovacao (UC-05, UC-06) ==
+Funcionario -> Sistema : gerarOrcamento(ordemServicoId, itens)
+Sistema --> Funcionario : orcamento (status=AguardandoAprovacao)
+Cliente -> Funcionario : comunica decisao (aprovar / recusar)
+Funcionario -> Sistema : registrarDecisao(ordemServicoId, Aprovado | Recusado)
+Sistema --> Funcionario : decisao registrada
+
+== Execucao e Uso de Pecas (UC-07, UC-08) ==
+Funcionario -> Sistema : executarServico(ordemServicoId)
+Funcionario -> Sistema : registrarUsoPeca(ordemServicoId, pecaId, quantidade)
+Sistema --> Funcionario : status=ServicoConcluido
+
+== Pagamento (UC-09) ==
+Funcionario -> Sistema : registrarPagamento(ordemServicoId, metodo, valor)
+opt metodo = Cartao ou Pix
+    Sistema -> SP : processar(valor, metodo)
+    SP --> Sistema : statusPagamento, idTransacao
+end
+Sistema ->> SMTP : enviarEmailConclusao(cliente)
+Sistema --> Funcionario : status=Pago
+SMTP -->> Cliente : e-mail de conclusao
+
+== Finalizacao e Retirada (UC-10, UC-11) ==
+Funcionario -> Sistema : finalizarOrdemServico(ordemServicoId)
+Funcionario -> Sistema : registrarRetirada(ordemServicoId, quemRetirou)
+Sistema --> Funcionario : Ordem de Servico finalizada e retirada
+
+== Administracao (UC-12 a UC-15) ==
+Gerente -> Sistema : gerenciarPecas / gerenciarServicos / gerenciarFuncionarios
+Gerente -> Sistema : gerarRelatorio(tipo, periodo)
+Sistema --> Gerente : catalogo atualizado / relatorio gerado
+@enduml

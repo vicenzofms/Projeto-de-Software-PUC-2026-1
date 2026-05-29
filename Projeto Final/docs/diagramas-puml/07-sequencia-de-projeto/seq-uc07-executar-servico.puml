@@ -1,0 +1,69 @@
+@startuml seq-uc07-executar-servico
+actor Funcionario
+participant "OrdemServicoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "OrdemServicoService" as Service
+participant "OrdemServicoRepository" as OSRepo
+participant "HistoricoStatusRepository" as HistRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /ordens-servico/:id/execucao (JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: executar(ordemServicoId, funcionarioId)
+activate Service
+
+Service -> OSRepo: findById(ordemServicoId)
+activate OSRepo
+OSRepo -> DB: SELECT ordem_servico WHERE id=?
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+note right of Service: Regra: execucao exige\norcamento aprovado (OrcamentoAprovado).
+
+Service -> OSRepo: update(ordemServicoId, status=EmManutencao)
+activate OSRepo
+OSRepo -> DB: UPDATE ordem_servico SET status='EmManutencao'
+OSRepo --> Service: ok
+deactivate OSRepo
+Service -> HistRepo: create(ordemServicoId, OrcamentoAprovado, EmManutencao, funcionarioId)
+activate HistRepo
+HistRepo -> DB: INSERT INTO historico_status
+HistRepo --> Service: ok
+deactivate HistRepo
+
+loop para cada peca utilizada
+    ref over Controller, DB: UC-08 Registrar uso de pecas\n(verificarDisponibilidade + debitarEstoque)
+end
+
+alt servico concluido
+    Service -> OSRepo: update(ordemServicoId, status=ServicoConcluido)
+    activate OSRepo
+    OSRepo -> DB: UPDATE ordem_servico SET status='ServicoConcluido'
+    OSRepo --> Service: ok
+    deactivate OSRepo
+    Service -> HistRepo: create(ordemServicoId, EmManutencao, ServicoConcluido, funcionarioId)
+    activate HistRepo
+    HistRepo -> DB: INSERT INTO historico_status
+    HistRepo --> Service: ok
+    deactivate HistRepo
+else aguardando peca externa
+    Service -> OSRepo: update(ordemServicoId, status=AguardandoPeca)
+    activate OSRepo
+    OSRepo -> DB: UPDATE ordem_servico SET status='AguardandoPeca'
+    OSRepo --> Service: ok
+    deactivate OSRepo
+    note right of Service: Retomada manual quando\na peca chegar.
+end
+
+Service --> Controller: ordemServicoDTO
+deactivate Service
+
+Controller --> Funcionario: 200 OK\nordemServicoDTO
+deactivate Controller
+@enduml

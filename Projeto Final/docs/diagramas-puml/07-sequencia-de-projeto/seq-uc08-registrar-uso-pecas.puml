@@ -1,0 +1,52 @@
+@startuml seq-uc08-registrar-uso-pecas
+actor Funcionario
+participant "CatalogoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "CatalogoService" as Service
+participant "PecaRepository" as PecaRepo
+participant "ItemOrcamentoRepository" as ItemRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /ordens-servico/:id/pecas\n(pecaId, quantidade, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: registrarUsoPeca(ordemServicoId, pecaId, quantidade)
+activate Service
+
+Service -> PecaRepo: findById(pecaId)
+activate PecaRepo
+PecaRepo -> DB: SELECT peca WHERE id=?
+PecaRepo --> Service: peca
+deactivate PecaRepo
+
+Service -> Service: peca.verificarDisponibilidade(quantidade)
+note right of Service: Regra de negocio:\nnao usar peca sem saldo em estoque.
+
+opt sem disponibilidade
+    Service --> Controller: erro(PecaIndisponivel)
+    Controller --> Funcionario: 409 Conflict (sugere solicitar ao gerente)
+end
+
+Service -> PecaRepo: debitarEstoque(pecaId, quantidade)
+activate PecaRepo
+PecaRepo -> DB: UPDATE peca SET saldo_estoque = saldo_estoque - ?
+PecaRepo --> Service: peca
+deactivate PecaRepo
+
+Service -> ItemRepo: vincularUso(ordemServicoId, pecaId, quantidade)
+activate ItemRepo
+ItemRepo -> DB: UPDATE item_orcamento (peca utilizada)
+ItemRepo --> Service: itemOrcamento
+deactivate ItemRepo
+
+Service --> Controller: usoPecaDTO
+deactivate Service
+
+Controller --> Funcionario: 201 Created\nusoPecaDTO
+deactivate Controller
+@enduml

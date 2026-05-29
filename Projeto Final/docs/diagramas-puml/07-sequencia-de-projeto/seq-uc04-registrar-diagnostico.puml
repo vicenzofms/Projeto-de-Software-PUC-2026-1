@@ -1,0 +1,58 @@
+@startuml seq-uc04-registrar-diagnostico
+actor Funcionario
+participant "OrdemServicoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "OrdemServicoService" as Service
+participant "OrdemServicoRepository" as OSRepo
+participant "DiagnosticoRepository" as DiagRepo
+participant "HistoricoStatusRepository" as HistRepo
+database "PostgreSQL" as DB
+
+Funcionario -> Controller: POST /ordens-servico/:id/diagnostico\n(analiseTecnica, causaIdentificada, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: registrarDiagnostico(ordemServicoId, analiseTecnica, causaIdentificada, funcionarioId)
+activate Service
+
+Service -> OSRepo: findById(ordemServicoId)
+activate OSRepo
+OSRepo -> DB: SELECT ordem_servico WHERE id=?
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+note right of Service: Regra: diagnostico exige Ordem em\nAberta/Em Diagnostico; bloqueia novo\nregistro se ja finalizado.
+
+opt diagnostico ja registrado
+    Service --> Controller: erro(DiagnosticoJaRegistrado)
+    Controller --> Funcionario: 409 Conflict
+end
+
+Service -> DiagRepo: create(ordemServicoId, analiseTecnica, causaIdentificada)
+activate DiagRepo
+DiagRepo -> DB: INSERT INTO diagnostico
+DiagRepo --> Service: diagnostico
+deactivate DiagRepo
+
+Service -> OSRepo: update(ordemServicoId, status=AguardandoOrcamento)
+activate OSRepo
+OSRepo -> DB: UPDATE ordem_servico SET status='AguardandoOrcamento'
+OSRepo --> Service: ordemServico
+deactivate OSRepo
+
+Service -> HistRepo: create(ordemServicoId, EmDiagnostico, AguardandoOrcamento, funcionarioId)
+activate HistRepo
+HistRepo -> DB: INSERT INTO historico_status
+HistRepo --> Service: ok
+deactivate HistRepo
+
+Service --> Controller: diagnosticoDTO
+deactivate Service
+
+Controller --> Funcionario: 201 Created\ndiagnosticoDTO
+deactivate Controller
+@enduml

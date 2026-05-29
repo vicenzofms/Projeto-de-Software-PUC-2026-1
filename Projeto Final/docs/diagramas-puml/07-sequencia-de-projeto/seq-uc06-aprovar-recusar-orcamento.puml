@@ -1,0 +1,63 @@
+@startuml seq-uc06-aprovar-recusar-orcamento
+actor Cliente
+actor Funcionario
+participant "OrcamentoController" as Controller
+participant "AuthMiddleware" as Auth
+participant "OrcamentoService" as Service
+participant "OrcamentoRepository" as OrcRepo
+participant "OrdemServicoService" as OSService
+participant "HistoricoStatusRepository" as HistRepo
+database "PostgreSQL" as DB
+
+Cliente -> Funcionario: comunica decisao sobre o orcamento
+Funcionario -> Controller: PATCH /orcamentos/:ordemServicoId/decisao\n(decisao, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario
+deactivate Auth
+
+Controller -> Service: registrarDecisao(ordemServicoId, decisao, funcionarioId)
+activate Service
+
+Service -> OrcRepo: findByOrdemServico(ordemServicoId)
+activate OrcRepo
+OrcRepo -> DB: SELECT orcamento JOIN ordem_servico
+OrcRepo --> Service: orcamento
+deactivate OrcRepo
+
+note right of Service: Regra: Ordem de Servico deve\nestar em Aguardando Aprovacao.
+
+alt decisao = Aprovado
+    Service -> OrcRepo: update(orcamentoId, status=Aprovado)
+    activate OrcRepo
+    OrcRepo -> DB: UPDATE orcamento SET status='Aprovado'
+    OrcRepo --> Service: orcamento
+    deactivate OrcRepo
+    Service -> OSService: alterarStatus(ordemServicoId, OrcamentoAprovado)
+else decisao = Recusado
+    Service -> OrcRepo: update(orcamentoId, status=Recusado)
+    activate OrcRepo
+    OrcRepo -> DB: UPDATE orcamento SET status='Recusado'
+    OrcRepo --> Service: orcamento
+    deactivate OrcRepo
+    Service -> OSService: alterarStatus(ordemServicoId, OrcamentoRecusado)
+    note right of OSService: Ordem de Servico pode ser\nencerrada sem execucao.
+end
+
+activate OSService
+OSService -> HistRepo: create(ordemServicoId, AguardandoAprovacao, novoStatus, funcionarioId)
+activate HistRepo
+HistRepo -> DB: INSERT INTO historico_status
+HistRepo --> OSService: ok
+deactivate HistRepo
+OSService --> Service: ok
+deactivate OSService
+
+Service --> Controller: orcamentoDTO
+deactivate Service
+
+Controller --> Funcionario: 200 OK\norcamentoDTO
+deactivate Controller
+@enduml

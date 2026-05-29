@@ -1,0 +1,51 @@
+@startuml seq-uc14-gerenciar-funcionarios
+actor Gerente
+participant "UsuariosController" as Controller
+participant "AuthMiddleware" as Auth
+participant "UsuariosService" as Service
+participant "UsuariosRepository" as UserRepo
+participant "OrdemServicoRepository" as OSRepo
+database "PostgreSQL" as DB
+
+Gerente -> Controller: POST | PUT /usuarios\n(nome, email, perfil, matricula, JWT)
+activate Controller
+
+Controller -> Auth: validarToken(JWT)
+activate Auth
+Auth --> Controller: payloadUsuario (perfil=Gerente)
+deactivate Auth
+
+note right of Controller: Regra: somente o Gerente\ngerencia usuarios e permissoes.
+
+Controller -> Service: gerenciarFuncionario(operacao, dados)
+activate Service
+
+alt operacao = criar ou editar
+    Service -> UserRepo: create/update(dados)
+    activate UserRepo
+    UserRepo -> DB: INSERT/UPDATE usuario
+    UserRepo --> Service: usuario
+    deactivate UserRepo
+else operacao = desativar
+    Service -> OSRepo: existeOrdemEmAndamento(funcionarioId)
+    activate OSRepo
+    OSRepo -> DB: SELECT COUNT(*) ordem_servico ativa do funcionario
+    OSRepo --> Service: emAndamento
+    deactivate OSRepo
+    opt funcionario com Ordem de Servico em andamento
+        Service --> Controller: erro(ReatribuicaoNecessaria)
+        Controller --> Gerente: 409 Conflict
+    end
+    Service -> UserRepo: softDelete(funcionarioId)
+    activate UserRepo
+    UserRepo -> DB: UPDATE usuario SET ativo=false
+    UserRepo --> Service: ok
+    deactivate UserRepo
+end
+
+Service --> Controller: usuarioDTO
+deactivate Service
+
+Controller --> Gerente: 200 OK\nusuarioDTO
+deactivate Controller
+@enduml
